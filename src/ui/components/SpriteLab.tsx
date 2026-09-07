@@ -29,18 +29,17 @@ function Cell({ mask, label, scale = 2 }: { mask: number; label: string; scale?:
 const bit = (id: string) => maskOf(MUTATIONS.find((m) => m.id === id)!)
 
 const COMBOS: Array<[number, string]> = [
-  [bit('twinHead') | bit('frenzy') | bit('giant'), '双頭狂乱メガ'],
-  [bit('frenzy') | bit('pressure') | bit('abyss') | bit('tentacle'), '狂乱深圧アビスタコ'],
-  [bit('giant') | bit('mecha') | bit('armor'), 'メガアーマーメカ'],
-  [bit('twinHead') | bit('mecha') | bit('volt') | bit('autonomous'), '双頭メカサンダーオート'],
-  [bit('cosmic') | bit('alien') | bit('zeroG'), 'ゼロGコズミックエイリアン'],
-  [bit('swarm') | bit('glow') | bit('frenzy'), 'ヒカリ狂乱群体'],
-  [bit('ancient') | bit('eldritch') | bit('tentacle') | bit('abyss'), '古代アビスタコ邪神'],
-  [bit('meteor') | bit('giant') | bit('volt'), 'メガサンダーメテオ'],
-  [
-    MUTATIONS.reduce((a, m) => a + maskOf(m), 0),
-    '全部乗せ（18種）',
-  ],
+  [bit('ghost') | 0, 'ゴースト単体（半透明）'],
+  [bit('fungus') + bit('ghost') + bit('zombie'), 'キノコゴーストゾンビ'],
+  [bit('albino') + bit('swift') + bit('spike'), 'スイフトアルビノスパイク'],
+  [bit('tripleHead') + bit('giant') + bit('poison'), 'ポイズントリプルヘッド巨大'],
+  [bit('tornado') + bit('zeroG') + bit('tsunami'), 'フライングトルネードツナミ'],
+  [bit('magma') + bit('frozen') + bit('storm'), 'マグマフローズンストーム'],
+  [bit('frenzy') + bit('pressure') + bit('abyss') + bit('tentacle'), '狂乱深圧アビスタコ'],
+  [bit('giant') + bit('armor') + bit('mecha') + bit('volt'), '巨大アーマードメカサンダー'],
+  [bit('triple') + bit('zombie') + bit('magma'), 'トリプルゾンビマグマ'],
+  [bit('ancient') + bit('eldritch') + bit('tsunami'), 'エンシェント邪神ツナミ'],
+  [MUTATIONS.reduce((a, m) => a + maskOf(m), 0), '全部乗せ（32種）'],
 ]
 
 export function SpriteLab({ onClose }: { onClose: () => void }) {

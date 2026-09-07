@@ -43,7 +43,7 @@ export type PartSlot = 'head' | 'tail' | 'body'
 export type Visual = {
   part?: { slot: PartSlot; draw: (ctx: Ctx) => void }
   attach?: (ctx: Ctx) => void
-  transform?: { scale?: number; count?: number; tilt?: number }
+  transform?: { scale?: number; count?: number; tilt?: number; alpha?: number }
   palette?: { rgb: RGB; amount: number }
   overlay?: (ctx: Ctx) => void
 }
@@ -84,6 +84,125 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   swarm: {
     // 「ダブル」なので 2 体。名前と見た目を一致させる
     transform: { count: 2, scale: 0.74 },
+  },
+  triple: {
+    transform: { count: 3, scale: 0.66 },
+  },
+  swift: {
+    // 細長い体型にする
+    transform: { scale: 0.92 },
+    palette: { rgb: [150, 200, 230], amount: 0.25 },
+  },
+  albino: {
+    palette: { rgb: [244, 240, 236], amount: 0.72 },
+  },
+  spike: {
+    attach: (ctx) => {
+      // 背に並ぶ棘
+      for (let i = 0; i < 8; i++) {
+        const x = 12 + i * 4
+        const h = bodyHalf(x)
+        drawFin(ctx, BODY_X + x, MID_Y - h, 3, 4, -1, '#e8e2d4')
+      }
+    },
+  },
+  poison: {
+    palette: { rgb: [110, 190, 90], amount: 0.5 },
+    overlay: (ctx) => {
+      for (let i = 0; i < 10; i++) {
+        px(ctx, BODY_X + 4 + ((i * 13) % 40), MID_Y - 10 + ((i * 7) % 20), 2, 2, '#c8ff7a')
+      }
+    },
+  },
+  tripleHead: {
+    part: {
+      slot: 'head',
+      draw: (ctx) => {
+        // 頭を上下に 2 つ足して 3 つにする
+        for (const dy of [-10, 10]) {
+          for (let i = 30; i < BODY_W; i++) {
+            const h = Math.round(bodyHalf(i) * 0.66)
+            if (h <= 0) continue
+            px(ctx, BODY_X + i + 2, MID_Y + dy - h, 1, h * 2, PALETTE.body)
+          }
+          px(ctx, BODY_X + 42, MID_Y + dy - 3, 2, 2, PALETTE.eye)
+        }
+      },
+    },
+  },
+  fungus: {
+    palette: { rgb: [180, 150, 120], amount: 0.3 },
+    attach: (ctx) => {
+      // 背から生えたキノコ
+      for (const [x, sz] of [[16, 5], [24, 7], [33, 4]] as const) {
+        const top = MID_Y - bodyHalf(x)
+        px(ctx, BODY_X + x + 1, top - sz, 2, sz, '#e8dcc8')
+        px(ctx, BODY_X + x - 1, top - sz - 3, sz + 2, 3, '#d4534a')
+        px(ctx, BODY_X + x, top - sz - 2, 1, 1, '#f6e0d8')
+      }
+    },
+  },
+  ghost: {
+    // 半透明にする。絵は増やさず alpha だけで表現できる
+    transform: { alpha: 0.45 },
+    palette: { rgb: [190, 215, 255], amount: 0.5 },
+    overlay: (ctx) => outline(ctx, FRAME_W, FRAME_H, [200, 230, 255], 0.4),
+  },
+  zombie: {
+    palette: { rgb: [120, 140, 95], amount: 0.55 },
+    attach: (ctx) => {
+      // 欠けた体と剥き出しの骨
+      for (const [x, y, w] of [[14, -3, 4], [22, 2, 3], [30, -5, 3]] as const) {
+        px(ctx, BODY_X + x, MID_Y + y, w, 3, '#2a2f22')
+        px(ctx, BODY_X + x, MID_Y + y + 1, w, 1, '#ddd6c0')
+      }
+    },
+  },
+
+  // --- 災害系 ---
+  tornado: {
+    transform: { tilt: 0.34 },
+    overlay: (ctx) => {
+      // 巻き上がる渦
+      for (let i = 0; i < 14; i++) {
+        const y = MID_Y - 14 + i * 2
+        const w = 3 + Math.abs(Math.sin(i * 0.8)) * 12
+        px(ctx, BODY_X + 20 - w / 2, y, w, 1, i % 2 ? '#b9d8e8' : '#7fa8c4')
+      }
+    },
+  },
+  magma: {
+    palette: { rgb: [220, 90, 30], amount: 0.55 },
+  },
+  frozen: {
+    palette: { rgb: [190, 230, 255], amount: 0.5 },
+    attach: (ctx) => {
+      // 体を覆う氷塊
+      for (const [x, y] of [[14, -6], [22, 4], [30, -4], [38, 2]] as const) {
+        px(ctx, BODY_X + x, MID_Y + y, 5, 5, '#dff2ff')
+        px(ctx, BODY_X + x + 1, MID_Y + y + 1, 2, 2, '#ffffff')
+      }
+    },
+  },
+  storm: {
+    overlay: (ctx) => {
+      // 吹き付ける風の筋
+      for (let i = 0; i < 9; i++) {
+        const y = MID_Y - 14 + i * 3.4
+        px(ctx, BODY_X - 6 + ((i * 5) % 10), y, 14 + (i % 3) * 6, 1, '#cfe3f0')
+      }
+    },
+  },
+  tsunami: {
+    transform: { scale: 1.35 },
+    overlay: (ctx) => {
+      // 巻き込む水しぶき
+      for (let i = 0; i < 22; i++) {
+        const x = BODY_X - 4 + i * 3
+        const y = MID_Y + Math.round(Math.sin(i * 0.55) * 11)
+        px(ctx, x, y, 2, 2, i % 3 ? '#7fd4ff' : '#ffffff')
+      }
+    },
   },
   giant: {
     transform: { scale: 1.5 },
@@ -283,6 +402,7 @@ export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
   let scaleMult = 1
   let count = 1
   let tilt = 0
+  let alpha = 1
 
   for (const d of defs) {
     const v = VISUALS[d.id]
@@ -302,6 +422,7 @@ export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
       if (v.transform.scale) scaleMult *= v.transform.scale
       if (v.transform.count) count = Math.max(count, v.transform.count)
       if (v.transform.tilt) tilt += v.transform.tilt
+      if (v.transform.alpha !== undefined) alpha *= v.transform.alpha
     }
   }
 
@@ -325,6 +446,7 @@ export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
           { x: 0.44, y: -0.03, s: 0.7 },
         ].slice(0, count)
 
+  g.globalAlpha = alpha
   for (const p of placements) {
     g.save()
     g.translate(p.x * outW + outW / 2, p.y * outH + outH / 2)
@@ -334,6 +456,7 @@ export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
     g.drawImage(unit, -w / 2, -h / 2, w, h)
     g.restore()
   }
+  g.globalAlpha = 1
 
   cache.set(key, out)
   return out

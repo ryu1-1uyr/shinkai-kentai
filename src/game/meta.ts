@@ -148,6 +148,15 @@ export const UNLOCKS: UnlockDef[] = [
     family: 'cosmic',
     requires: 'family_mech',
   },
+  {
+    id: 'family_disaster',
+    name: `${FAMILIES.disaster.name}の解禁`,
+    detail: '竜巻化・灼熱・氷結・暴風・大津波がドラフトに追加される',
+    cost: 40000,
+    kind: 'family',
+    family: 'disaster',
+    requires: 'family_cosmic',
+  },
   { id: 'speed2', name: '倍速 ×2', detail: '実験の進行を 2 倍速にできる', cost: 300, kind: 'qol' },
   {
     id: 'doubleClick',
