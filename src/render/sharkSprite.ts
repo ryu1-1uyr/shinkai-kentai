@@ -59,7 +59,7 @@ const RARITY_PRIORITY = { common: 1, uncommon: 2, rare: 3, legendary: 4 } as con
  * base.png を描き替えても追従する。画像がまだ無いときは何も描かない
  * （仮の絵しか無い状態で四角い塊を出すより、頭が 1 つのままの方がマシなため）。
  */
-const HEAD_FROM = 58
+const HEAD_FROM = 66
 const HEAD_W = BODY_W - HEAD_FROM
 
 function stampHead(ctx: Ctx, dx: number, dy: number): void {
@@ -82,6 +82,25 @@ function stampHead(ctx: Ctx, dx: number, dy: number): void {
  * 位置は base.png の実シルエット（bodyTop / bodyBottom / trunkTop）を基準にしている。
  * 式で決め打ちしていないので、**base.png を描き替えると装飾も追従する**。
  */
+/** 本体座標（0〜95, 0〜43）→ フレーム座標 */
+const bx = (x: number) => BODY_X + x
+const by = (y: number) => BODY_Y + y
+
+/** 背びれの範囲。背に載せる装飾はここを避ける */
+const DORSAL = [46, 66] as const
+const onDorsal = (x: number) => x >= DORSAL[0] && x <= DORSAL[1]
+
+/** 背中に沿って等間隔に装飾を置くときの x 候補（背びれを避ける） */
+const BACK_XS = [22, 28, 34, 40, 70, 76]
+
+/**
+ * 変異ごとの見た目。
+ *
+ * base.png（96×44）のピクセル地図を元に配置している。主な目印:
+ *   尾びれ x0〜13 / 第二背びれ x27〜33 / 背びれ x48〜64 / 目 (81,22) /
+ *   鰓 x57〜63 / 口 y25 x87〜94 / 腹の白 y25〜33 / 胸びれ x55〜63 y30〜43
+ * 背中の高さは実シルエット（trunkTop）から取るので、base を描き替えても追従する。
+ */
 const VISUALS: Partial<Record<MutationId, Visual>> = {
   // --- 生体系 ---
   glow: {
@@ -90,10 +109,9 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   frenzy: {
     palette: { rgb: [210, 60, 50], amount: 0.42 },
     attach: (ctx) => {
-      // 口元の牙
-      const y = bodyMid(84)
-      px(ctx, BODY_X + 78, y + 3, 16, 2, PALETTE.mouth)
-      for (let i = 0; i < 5; i++) px(ctx, BODY_X + 80 + i * 3, y + 1, 2, 3, '#ffffff')
+      // 口を開けて牙を見せる。口は y25、x87〜94
+      px(ctx, bx(84), by(25), 10, 1, PALETTE.mouth)
+      for (let i = 0; i < 4; i++) px(ctx, bx(85 + i * 2), by(26), 1, 2, '#ffffff')
     },
   },
   swift: {
@@ -105,22 +123,25 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   },
   spike: {
     attach: (ctx) => {
-      // 背に並ぶ棘。胴の上端に沿わせる
-      for (let i = 0; i < 10; i++) {
-        const x = 22 + i * 6
+      // 背中の稜線に沿って棘。背びれの区間は避ける
+      for (const x of BACK_XS) {
         if (!inBody(x)) continue
-        drawFin(ctx, BODY_X + x, trunkTop(x) + 1, 4, 6, -1, '#e8e2d4')
+        const t = trunkTop(x)
+        px(ctx, bx(x), t - 4, 1, 4, '#ece6d8')
+        px(ctx, bx(x) + 1, t - 6, 1, 6, '#ece6d8')
+        px(ctx, bx(x) + 2, t - 4, 1, 4, '#ece6d8')
+        px(ctx, bx(x), t - 1, 3, 1, PALETTE.shade)
       }
     },
   },
   poison: {
     palette: { rgb: [110, 190, 90], amount: 0.5 },
     overlay: (ctx) => {
-      for (let i = 0; i < 14; i++) {
-        const x = 10 + ((i * 23) % 80)
-        if (!inBody(x)) continue
-        const y = bodyTop(x) + ((i * 13) % Math.max(2, bodyBottom(x) - bodyTop(x)))
-        px(ctx, BODY_X + x, y, 3, 3, '#c8ff7a')
+      // 体表の毒の泡。胴の範囲 y16〜30 に散らす
+      const spots: Array<[number, number]> = [[26, 22], [34, 19], [42, 27], [50, 17], [68, 21], [74, 28], [80, 18], [38, 24], [64, 26]]
+      for (const [x, y] of spots) {
+        px(ctx, bx(x), by(y), 3, 3, '#c8ff7a')
+        px(ctx, bx(x) + 1, by(y) + 1, 1, 1, '#f0ffc0')
       }
     },
   },
@@ -128,15 +149,15 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     part: {
       slot: 'head',
       // 元の絵から頭を切り出して、上にずらして貼る
-      draw: (ctx) => stampHead(ctx, 3, -13),
+      draw: (ctx) => stampHead(ctx, 2, -13),
     },
   },
   tripleHead: {
     part: {
       slot: 'head',
       draw: (ctx) => {
-        stampHead(ctx, 3, -15)
-        stampHead(ctx, 3, 15)
+        stampHead(ctx, 2, -11)
+        stampHead(ctx, 2, 11)
       },
     },
   },
@@ -153,17 +174,19 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   fungus: {
     palette: { rgb: [180, 150, 120], amount: 0.3 },
     attach: (ctx) => {
-      // 背から生えたキノコ
-      for (const [x, sz] of [[30, 7], [46, 10], [62, 6]] as const) {
-        const top = trunkTop(x)
-        px(ctx, BODY_X + x + 2, top - sz, 3, sz, '#e8dcc8')
-        px(ctx, BODY_X + x - 2, top - sz - 4, sz + 4, 4, '#d4534a')
-        px(ctx, BODY_X + x, top - sz - 3, 2, 1, '#f6e0d8')
+      // 背中から生えたキノコ。傘は軸の真上に載せる
+      for (const [x, h, cap] of [[26, 5, 7], [38, 8, 9], [72, 6, 7], [82, 4, 5]] as const) {
+        if (!inBody(x)) continue
+        const t = trunkTop(x)
+        const cx = bx(x)
+        px(ctx, cx, t - h, 2, h, '#efe4cf')                       // 軸
+        px(ctx, cx - Math.floor(cap / 2) + 1, t - h - 3, cap, 3, '#d4534a') // 傘
+        px(ctx, cx - Math.floor(cap / 2) + 2, t - h - 4, cap - 2, 1, '#e26a5f')
+        px(ctx, cx, t - h - 2, 1, 1, '#f9e0dc')                    // 傘の斑点
       }
     },
   },
   ghost: {
-    // 半透明にする。絵を増やさず alpha だけで表現できる
     transform: { alpha: 0.45 },
     palette: { rgb: [190, 215, 255], amount: 0.5 },
     overlay: (ctx) => outline(ctx, FRAME_W, FRAME_H, [200, 230, 255], 0.4),
@@ -171,23 +194,24 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   zombie: {
     palette: { rgb: [120, 140, 95], amount: 0.55 },
     attach: (ctx) => {
-      // 欠けた体と剥き出しの骨
-      for (const [x, w] of [[26, 7], [44, 6], [60, 6]] as const) {
-        if (!inBody(x)) continue
-        const y = bodyMid(x)
-        px(ctx, BODY_X + x, y - 2, w, 5, '#2a2f22')
-        px(ctx, BODY_X + x, y, w, 1, '#ddd6c0')
+      // 欠けた体と剥き出しの肋骨。胴の中央帯 y18〜28 に置く
+      for (const [x, y, w] of [[30, 19, 7], [44, 24, 6], [68, 18, 6]] as const) {
+        px(ctx, bx(x), by(y), w, 5, '#2a2f22')
+        for (let i = 0; i < w; i += 2) px(ctx, bx(x) + i, by(y) + 1, 1, 3, '#ddd6c0')
       }
+      // 垂れた眼
+      px(ctx, bx(81), by(23), 2, 3, '#e8ff7a')
     },
   },
   ancient: {
     palette: { rgb: [150, 128, 84], amount: 0.45 },
     attach: (ctx) => {
-      // 背の骨質の隆起
-      for (let i = 0; i < 7; i++) {
-        const x = 24 + i * 8
+      // 背中の骨質の隆起。棘より鈍い
+      for (const x of BACK_XS) {
         if (!inBody(x)) continue
-        px(ctx, BODY_X + x, trunkTop(x) - 3, 3, 5, '#e6dcc0')
+        const t = trunkTop(x)
+        px(ctx, bx(x) - 1, t - 3, 4, 4, '#e6dcc0')
+        px(ctx, bx(x), t - 4, 2, 1, '#f4ecd6')
       }
     },
   },
@@ -205,13 +229,17 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     part: {
       slot: 'tail',
       draw: (ctx) => {
-        // 尾びれをタコ足に置き換える
+        // 尾びれを消した跡（x0〜12）に、付け根 (13, 22) からタコ足を生やす
         for (let t = 0; t < 5; t++) {
-          const baseY = MID_Y - 12 + t * 6
-          for (let i = 0; i < 22; i++) {
-            const wob = Math.round(Math.sin(i * 0.45 + t * 1.9) * 4)
-            px(ctx, BODY_X + 4 - i, baseY + wob, 2, 3, t % 2 ? '#8c5a86' : '#a06898')
+          const y0 = by(16 + t * 3)
+          const dir = t % 2 ? 1 : -1
+          for (let i = 0; i < 16; i++) {
+            const wob = Math.round(Math.sin(i * 0.5 + t * 1.3) * 3) * dir
+            const thick = i < 10 ? 3 : 2
+            px(ctx, bx(13 - i), y0 + wob + (i > 8 ? dir * 2 : 0), 1, thick, t % 2 ? '#8c5a86' : '#a06898')
           }
+          // 先端の吸盤
+          px(ctx, bx(-2), y0 + Math.round(Math.sin(15 * 0.5 + t * 1.3) * 3) * dir + dir * 2, 1, 1, '#d9a9d0')
         }
       },
     },
@@ -219,12 +247,10 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   eldritch: {
     palette: { rgb: [90, 40, 110], amount: 0.35 },
     attach: (ctx) => {
-      // 体表に増えた眼
-      for (const [x, f] of [[34, 0.3], [46, 0.6], [56, 0.25], [64, 0.7], [42, 0.45]] as const) {
-        if (!inBody(x)) continue
-        const y = bodyTop(x) + (bodyBottom(x) - bodyTop(x)) * f
-        px(ctx, BODY_X + x, y, 4, 4, '#ffe98a')
-        px(ctx, BODY_X + x + 1, y + 1, 2, 2, '#1a0f24')
+      // 体表に増えた眼。鰓（x57〜63）は避ける
+      for (const [x, y] of [[30, 20], [40, 25], [46, 18], [68, 20], [76, 26], [36, 29]] as const) {
+        px(ctx, bx(x), by(y), 4, 4, '#ffe98a')
+        px(ctx, bx(x) + 1, by(y) + 1, 2, 2, '#1a0f24')
       }
     },
   },
@@ -232,12 +258,17 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   // --- 機械系 ---
   armor: {
     attach: (ctx) => {
-      for (let x = 24; x < 76; x += 11) {
-        if (!inBody(x)) continue
-        const t = bodyTop(x)
-        const h = bodyBottom(x) - t
-        px(ctx, BODY_X + x, t, 6, h, PALETTE.metal)
-        px(ctx, BODY_X + x, t, 6, 2, PALETTE.metalDark)
+      // 背中に沿った装甲板。稜線から 7px ぶん被せる
+      for (const [x0, x1] of [[20, 30], [32, 42], [66, 76], [78, 86]] as const) {
+        for (let x = x0; x <= x1; x++) {
+          if (!inBody(x)) continue
+          const t = trunkTop(x)
+          px(ctx, bx(x), t, 1, 7, PALETTE.metal)
+          px(ctx, bx(x), t, 1, 1, '#c9d1d8')
+          px(ctx, bx(x), t + 6, 1, 1, PALETTE.metalDark)
+        }
+        px(ctx, bx(x0), trunkTop(x0), 1, 7, PALETTE.metalDark)
+        px(ctx, bx(x1), trunkTop(x1), 1, 7, PALETTE.metalDark)
       }
     },
   },
@@ -245,40 +276,44 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     part: {
       slot: 'body',
       draw: (ctx) => {
-        // 胴の後ろ半分を機械に置換
-        for (let i = 0; i < 48; i++) {
-          if (!inBody(i)) continue
-          const t = bodyTop(i)
-          px(ctx, BODY_X + i, t, 1, bodyBottom(i) - t, PALETTE.metal)
+        // 尾側の胴（x14〜45）を機械に置換。ひれはそのまま
+        for (let x = 14; x <= 45; x++) {
+          if (!inBody(x) || onDorsal(x)) continue
+          const t = trunkTop(x)
+          const h = Math.min(bodyBottom(x) - t, 15)
+          px(ctx, bx(x), t, 1, h, PALETTE.metal)
+          px(ctx, bx(x), t + h - 3, 1, 3, '#c9d1d8')
         }
-        for (let i = 6; i < 48; i += 9) {
-          if (!inBody(i)) continue
-          px(ctx, BODY_X + i, bodyTop(i), 1, bodyBottom(i) - bodyTop(i), PALETTE.metalDark)
-        }
-        px(ctx, BODY_X + 22, bodyMid(22) - 3, 6, 6, '#ff6a4d')
+        for (const x of [20, 28, 36, 44]) px(ctx, bx(x), trunkTop(x), 1, 14, PALETTE.metalDark)
+        px(ctx, bx(31), trunkTop(31) + 5, 5, 5, '#ff6a4d')
+        px(ctx, bx(32), trunkTop(32) + 6, 2, 2, '#ffd2c8')
       },
     },
   },
   volt: {
     overlay: (ctx) => {
-      for (let s2 = 0; s2 < 4; s2++) {
-        let x = BODY_X + 16 + s2 * 22
-        let y = MID_Y - 24 + s2 * 4
-        for (let i = 0; i < 9; i++) {
-          px(ctx, x, y, 3, 2, '#8ff0ff')
+      // 体に走る電撃
+      for (const [sx, sy] of [[24, 10], [46, 6], [70, 8], [86, 12]] as const) {
+        let x = bx(sx)
+        let y = by(sy)
+        for (let i = 0; i < 8; i++) {
+          px(ctx, x, y, 2, 2, '#8ff0ff')
+          px(ctx, x + (i % 2 ? 2 : -1), y + 1, 1, 1, '#ffffff')
           x += i % 2 ? 3 : -2
-          y += 4
+          y += 3
         }
       }
     },
   },
   autonomous: {
     attach: (ctx) => {
-      // 背の砲塔
-      const top = trunkTop(48)
-      px(ctx, BODY_X + 42, top - 9, 15, 9, PALETTE.metal)
-      px(ctx, BODY_X + 55, top - 7, 13, 3, PALETTE.metalDark)
-      px(ctx, BODY_X + 46, top - 13, 4, 4, '#ff4d4d')
+      // 背びれの後ろ（x68〜80）に砲塔
+      const t = trunkTop(74)
+      px(ctx, bx(66), t - 7, 14, 7, PALETTE.metal)       // 台座
+      px(ctx, bx(66), t - 7, 14, 1, '#c9d1d8')
+      px(ctx, bx(78), t - 5, 12, 3, PALETTE.metalDark)   // 砲身
+      px(ctx, bx(88), t - 6, 2, 5, PALETTE.metalDark)    // 砲口
+      px(ctx, bx(70), t - 10, 3, 3, '#ff4d4d')           // ランプ
     },
   },
 
@@ -289,36 +324,43 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   },
   meteor: {
     overlay: (ctx) => {
-      // 尾を引く火の粉
-      for (let i = 0; i < 30; i++) {
-        const x = BODY_X - 4 - i * 2
-        const y = MID_Y + Math.round(Math.sin(i * 0.55) * 6)
-        const c = i < 10 ? '#fff2a0' : i < 20 ? '#ff9d3c' : '#d94a2a'
-        px(ctx, x, y, 3, 3, c)
+      // 尾から後ろへ引く炎。尾びれ (x0〜13) の後方に出す
+      for (let i = 0; i < 12; i++) {
+        const x = bx(2 - i * 1.4)
+        const y = by(22) + Math.round(Math.sin(i * 0.8) * 3)
+        const c = i < 3 ? '#fff6b0' : i < 7 ? '#ffb347' : '#e0542a'
+        const sz = i < 3 ? 5 : i < 8 ? 4 : 3
+        px(ctx, x, y - sz / 2, sz, sz, c)
       }
+      // 尾びれ自体も燃える
+      for (const [x, y] of [[3, 12], [6, 16], [2, 30], [5, 33]] as const) px(ctx, bx(x), by(y), 3, 3, '#ffb347')
     },
   },
   cosmic: {
     palette: { rgb: [24, 16, 52], amount: 0.6 },
     overlay: (ctx) => {
       // 体表に星空
-      for (let i = 0; i < 44; i++) {
-        const x = 6 + ((i * 17) % 86)
+      for (let i = 0; i < 40; i++) {
+        const x = 16 + ((i * 17) % 76)
         if (!inBody(x)) continue
-        const y = bodyTop(x) + ((i * 11) % Math.max(2, bodyBottom(x) - bodyTop(x)))
-        px(ctx, BODY_X + x, y, 1, 1, i % 4 ? '#ffffff' : '#9fd0ff')
+        const t = bodyTop(x)
+        const b = bodyBottom(x)
+        const y = t + 2 + ((i * 11) % Math.max(2, b - t - 4))
+        px(ctx, bx(x), y, 1, 1, i % 4 ? '#ffffff' : '#9fd0ff')
       }
     },
   },
   alien: {
     palette: { rgb: [80, 230, 120], amount: 0.5 },
     attach: (ctx) => {
-      // 触角と大きい単眼
-      const top = trunkTop(78)
-      px(ctx, BODY_X + 80, top - 11, 2, 11, '#c8ffd8')
-      px(ctx, BODY_X + 78, top - 15, 5, 5, '#e8ff6a')
-      px(ctx, BODY_X + 80, bodyMid(80) - 4, 8, 8, '#111820')
-      px(ctx, BODY_X + 82, bodyMid(80) - 2, 3, 3, '#c8ff6a')
+      // 頭の触角と、目 (81,22) を覆う大きな単眼
+      const t = trunkTop(80)
+      px(ctx, bx(82), t - 9, 2, 9, '#c8ffd8')
+      px(ctx, bx(80), t - 13, 6, 5, '#e8ff6a')
+      px(ctx, bx(81), t - 12, 2, 2, '#ffffff')
+      px(ctx, bx(78), by(19), 8, 8, '#111820')
+      px(ctx, bx(80), by(21), 4, 4, '#c8ff6a')
+      px(ctx, bx(81), by(22), 1, 1, '#ffffff')
     },
   },
 
@@ -326,11 +368,11 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   tornado: {
     transform: { tilt: 0.34 },
     overlay: (ctx) => {
-      // 巻き上がる渦
-      for (let i = 0; i < 22; i++) {
-        const y = MID_Y - 28 + i * 3
-        const w = 5 + Math.abs(Math.sin(i * 0.6)) * 26
-        px(ctx, BODY_X + 40 - w / 2, y, w, 1, i % 2 ? '#b9d8e8' : '#7fa8c4')
+      // 体に巻き付く渦
+      for (let i = 0; i < 24; i++) {
+        const y = by(-6 + i * 2.3)
+        const w = 8 + Math.abs(Math.sin(i * 0.55)) * 40
+        px(ctx, bx(48) - w / 2, y, w, 1, i % 2 ? '#c4dfee' : '#7fa8c4')
       }
     },
   },
@@ -341,11 +383,10 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     palette: { rgb: [190, 230, 255], amount: 0.5 },
     attach: (ctx) => {
       // 体を覆う氷塊
-      for (const [x, f] of [[26, 0.2], [42, 0.7], [58, 0.3], [72, 0.6]] as const) {
-        if (!inBody(x)) continue
-        const y = bodyTop(x) + (bodyBottom(x) - bodyTop(x)) * f
-        px(ctx, BODY_X + x, y, 8, 8, '#dff2ff')
-        px(ctx, BODY_X + x + 2, y + 2, 3, 3, '#ffffff')
+      for (const [x, y, sz] of [[24, 18, 7], [42, 25, 8], [58, 16, 6], [72, 23, 8], [84, 17, 5]] as const) {
+        px(ctx, bx(x), by(y), sz, sz, '#dff2ff')
+        px(ctx, bx(x) + 1, by(y) + 1, 2, 2, '#ffffff')
+        px(ctx, bx(x) + sz - 2, by(y) + sz - 2, 1, 1, '#9cc8e8')
       }
     },
   },
@@ -353,8 +394,10 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     overlay: (ctx) => {
       // 吹き付ける風の筋
       for (let i = 0; i < 12; i++) {
-        const y = MID_Y - 26 + i * 4.6
-        px(ctx, BODY_X - 10 + ((i * 7) % 16), y, 26 + (i % 3) * 12, 1, '#cfe3f0')
+        const y = by(-2 + i * 4)
+        const x = bx(-12 + ((i * 7) % 18))
+        px(ctx, x, y, 30 + (i % 3) * 14, 1, '#dbe9f3')
+        px(ctx, x + 6, y + 1, 12, 1, '#a9c4d6')
       }
     },
   },
@@ -362,9 +405,9 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     transform: { scale: 1.35 },
     overlay: (ctx) => {
       // 巻き込む水しぶき
-      for (let i = 0; i < 34; i++) {
-        const x = BODY_X - 8 + i * 4
-        const y = MID_Y + Math.round(Math.sin(i * 0.45) * 20)
+      for (let i = 0; i < 40; i++) {
+        const x = bx(-8 + i * 2.8)
+        const y = by(22) + Math.round(Math.sin(i * 0.4) * 22)
         px(ctx, x, y, 3, 3, i % 3 ? '#7fd4ff' : '#ffffff')
       }
     },
@@ -386,8 +429,12 @@ function newCanvas(w: number, h: number): { c: HTMLCanvasElement; g: Ctx } {
 
 /**
  * ベースのサメ 1 体ぶん（部位の置換を反映して）を 1 枚に描く。
- * 各レイヤーは public/sprites/ に同名の PNG を置けば差し替わる。
+ *
+ * base.png は尾びれまで含んだ完成形なので、画像があるときは仮の尾を描かない。
+ * 尾を置換する変異（触手化）は、base の尾びれの領域を消してから描く。
  */
+const TAIL_W = 13 // base.png の尾びれが占める幅（付け根の手前まで）
+
 function drawOne(
   g: Ctx,
   parts: Map<PartSlot, { id: MutationId; part: NonNullable<Visual['part']> }>,
@@ -396,19 +443,24 @@ function drawOne(
   const tail = parts.get('tail')
   const body = parts.get('body')
   const head = parts.get('head')
+  const hasBase = asset('base') !== null
 
-  // 尾（置換されていなければ既定の尾びれ）
-  if (tail) drawLayer(g, `part/tail/${tail.id}`, tail.part.draw)
-  else drawLayer(g, 'part/tail/default', drawTail)
-
-  // 胴とヒレ
-  drawLayer(g, 'base', (c) => {
-    drawBody(c)
-    drawFin(c, BODY_X + 36, MID_Y - bodyHalf(36), 18, 14, -1)
-    drawFin(c, BODY_X + 60, MID_Y + bodyHalf(60) - 2, 14, 10, 1)
-    px(c, BODY_X + 82, MID_Y - 6, 4, 4, PALETTE.eye)
-    px(c, BODY_X + 86, MID_Y + 4, 10, 2, PALETTE.mouth)
-  })
+  if (hasBase) {
+    drawLayer(g, 'base', () => {})
+    if (tail) {
+      g.clearRect(BODY_X, BODY_Y, TAIL_W, BODY_H)
+      drawLayer(g, `part/tail/${tail.id}`, tail.part.draw)
+    }
+  } else {
+    // 画像が無いときだけ仮の絵を組む
+    if (tail) tail.part.draw(g)
+    else drawTail(g)
+    drawBody(g)
+    drawFin(g, BODY_X + 36, MID_Y - bodyHalf(36), 18, 14, -1)
+    drawFin(g, BODY_X + 60, MID_Y + bodyHalf(60) - 2, 14, 10, 1)
+    px(g, BODY_X + 82, MID_Y - 6, 4, 4, PALETTE.eye)
+    px(g, BODY_X + 86, MID_Y + 4, 10, 2, PALETTE.mouth)
+  }
 
   if (body) drawLayer(g, `part/body/${body.id}`, body.part.draw)
   if (head) drawLayer(g, `part/head/${head.id}`, head.part.draw)
