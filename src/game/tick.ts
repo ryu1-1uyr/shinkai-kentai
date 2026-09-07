@@ -1,0 +1,193 @@
+import type { Config } from './config.ts'
+import { BUILDINGS } from './buildings.ts'
+import { addSharks, launchWeakest } from './inventory.ts'
+import { MUTATIONS, type MutationDef, type MutationId, offerWeight } from './mutations.ts'
+import { type GameState, refreshBirthDist, rng } from './state.ts'
+import { bossHp, perDepthTime, targetCount, targetHp } from './targets.ts'
+
+/** そのティックのプレイヤー入力。シミュレータでは方針関数が埋める */
+export type TickInput = {
+  clicksPerSec: number
+}
+
+export function cultureRate(s: GameState): number {
+  let r = 0
+  BUILDINGS.forEach((b, i) => {
+    if (b.cultureRate) r += b.cultureRate * s.buildings[i]
+  })
+  return r * s.meta.cultureMult
+}
+
+export function clickValue(s: GameState, cfg: Config): number {
+  let tanks = 0
+  BUILDINGS.forEach((b, i) => {
+    if (b.clickBonus) tanks += s.buildings[i]
+  })
+  return cfg.click.base * (1 + tanks * cfg.click.perTankBonus) * s.meta.clickMult
+}
+
+export function sharkRate(s: GameState): number {
+  let base = 0
+  let mult = 1
+  BUILDINGS.forEach((b, i) => {
+    if (b.sharkRate) base += b.sharkRate * s.buildings[i]
+    if (b.sharkRateMult) mult += b.sharkRateMult * s.buildings[i]
+  })
+  return base * mult * s.meta.sharkRateMult
+}
+
+export function launchRate(s: GameState, cfg: Config): number {
+  let r = cfg.invasion.baseLaunchRate
+  BUILDINGS.forEach((b, i) => {
+    if (b.launchRate) r += b.launchRate * s.buildings[i]
+  })
+  return r * s.meta.launchMult
+}
+
+/**
+ * ドラフトで提示する候補を選ぶ。
+ * 重みは累計生産数に依存し、生産が伸びるほどレアな変異が出やすくなる。
+ * 取得済みの変異も最大ランク未満なら再提示される。
+ */
+function rollOffers(s: GameState, cfg: Config): MutationDef[] {
+  const pool = MUTATIONS.filter(
+    (m) => s.meta.families.has(m.family) && (s.ranks.get(m.id) ?? 0) < cfg.mutation.maxRank,
+  )
+  const offers: MutationDef[] = []
+  const picked = new Set<MutationId>()
+  const size = Math.min(cfg.mutation.draftSize, pool.length)
+  while (offers.length < size) {
+    const avail = pool.filter((m) => !picked.has(m.id))
+    let total = 0
+    for (const m of avail) total += offerWeight(m, s.producedTotal)
+    if (total <= 0) {
+      // どの変異も重みを持たないほど生産が少ない場合はコモンから引く
+      const fallback = avail[Math.floor(rng(s) * avail.length)]
+      picked.add(fallback.id)
+      offers.push(fallback)
+      continue
+    }
+    let r = rng(s) * total
+    for (const m of avail) {
+      r -= offerWeight(m, s.producedTotal)
+      if (r <= 0) {
+        picked.add(m.id)
+        offers.push(m)
+        break
+      }
+    }
+  }
+  return offers
+}
+
+function beginDepth(s: GameState, cfg: Config): void {
+  s.destroyed = 0
+  s.onBoss = false
+  s.currentHp = targetHp(s.depth, cfg)
+  if (cfg.invasion.timerModel === 'perDepth') {
+    s.timeLeft = perDepthTime(s.depth, cfg)
+  }
+}
+
+/** 現在の標的が壊れたときの遷移。余剰ダメージは次の標的へ持ち越す */
+function advanceTarget(s: GameState, cfg: Config, overkill: number): number {
+  if (s.onBoss) {
+    // 深度突破
+    s.clearedDepth += 1
+    if (cfg.invasion.timerModel === 'runWide') {
+      s.timeLeft += cfg.invasion.runWideBonusPerDepth
+    }
+    s.depth += 1
+    beginDepth(s, cfg)
+    return overkill
+  }
+  s.destroyed += 1
+  if (s.destroyed >= targetCount(s.depth, cfg)) {
+    s.onBoss = true
+    s.currentHp = bossHp(s.depth, cfg)
+  } else {
+    s.currentHp = targetHp(s.depth, cfg)
+  }
+  return overkill
+}
+
+export function tick(s: GameState, input: TickInput, cfg: Config): void {
+  // ドラフト提示中は選択されるまで一切進行しない
+  if (s.phase === 'over' || s.pendingOffers) return
+  const dt = 1 / cfg.tickHz
+  s.t += dt
+
+  // --- 培養液 ---
+  s.culture += cultureRate(s) * dt
+  s.culture += clickValue(s, cfg) * (input.clicksPerSec + s.meta.autoClick) * dt
+
+  // --- サメ生産 ---
+  const want = sharkRate(s) * dt
+  const affordable = s.culture / cfg.shark.cultureCost
+  const born = Math.min(want, affordable)
+  if (born > 0) {
+    s.culture -= born * cfg.shark.cultureCost
+    s.producedTotal += born
+    for (const [mask, p] of s.birthDist) {
+      addSharks(s.inv, mask, born * p)
+      s.births.set(mask, (s.births.get(mask) ?? 0) + born * p)
+    }
+  }
+
+  // --- 突然変異ドラフト ---
+  // 提示だけ行い、選択されるまで進行を止める（選択は applyDraft が行う）
+  if (s.producedTotal >= s.nextDraftAt) {
+    const offers = rollOffers(s, cfg)
+    if (offers.length === 0) {
+      s.nextDraftAt = Infinity
+    } else {
+      s.pendingOffers = offers
+      return
+    }
+  }
+
+  // --- フェーズ遷移 ---
+  if (s.phase === 'culture' && s.t >= cfg.culturePhaseSec) {
+    s.phase = 'invasion'
+    s.timeLeft = cfg.invasion.timerModel === 'runWide' ? cfg.invasion.runWideBase : 0
+    beginDepth(s, cfg)
+  }
+
+  if (s.phase !== 'invasion') return
+
+  // --- 侵略 ---
+  const n = launchRate(s, cfg) * dt
+  const { damage } = launchWeakest(s.inv, n, s.ranks, cfg)
+  let dmg = damage
+  let guard = 0
+  while (dmg > 0 && guard++ < 1000) {
+    if (dmg < s.currentHp) {
+      s.currentHp -= dmg
+      s.score += dmg
+      dmg = 0
+    } else {
+      s.score += s.currentHp
+      const over = dmg - s.currentHp
+      dmg = advanceTarget(s, cfg, over)
+    }
+  }
+
+  // --- タイマー ---
+  s.timeLeft -= dt
+  if (s.timeLeft <= 0) {
+    s.phase = 'over'
+    s.endReason = 'timeout'
+  }
+}
+
+/** 提示中のドラフトから 1 枚選んで確定する */
+export function applyDraft(s: GameState, cfg: Config, index: number): void {
+  const offers = s.pendingOffers
+  if (!offers || offers.length === 0) return
+  const chosen = offers[Math.max(0, Math.min(index, offers.length - 1))]
+  s.ranks.set(chosen.id, (s.ranks.get(chosen.id) ?? 0) + 1)
+  refreshBirthDist(s, cfg)
+  s.draftCount += 1
+  s.nextDraftAt += cfg.mutation.draftThresholdBase * Math.pow(cfg.mutation.draftThresholdGrowth, s.draftCount)
+  s.pendingOffers = null
+}
