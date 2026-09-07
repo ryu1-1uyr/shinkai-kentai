@@ -2,3 +2,7 @@ node_modules/
 dist/
 .DS_Store
 *.log
+
+# グローバルの gitignore で SPEC.md が除外されているが、
+# このリポジトリでは仕様と判断の根拠を記録した中心的なドキュメントなので追跡する
+!SPEC.md
