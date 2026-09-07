@@ -21,8 +21,8 @@ export type TickInput = {
 
 /**
  * 記録に残す価値のある個体か。
- * 変異を 2 つ以上併せ持つ複合個体か、rare 以上の変異を持つもの。
- * 通常サメがいちいち流れると記録が埋まって読めなくなる。
+ * **rare 以上を含み、かつ変異を 3 つ以上併せ持つ**個体だけを対象にする。
+ * 条件を緩めると記録が誕生ログで埋まって、破壊や深度突破が読めなくなる。
  */
 function isNotable(mask: MutationMask): boolean {
   let count = 0
@@ -32,7 +32,7 @@ function isNotable(mask: MutationMask): boolean {
     count++
     if (m.rarity === 'rare' || m.rarity === 'legendary') hasRare = true
   }
-  return count >= 2 || (count >= 1 && hasRare)
+  return hasRare && count >= 3
 }
 
 /** 設備の所持数 */

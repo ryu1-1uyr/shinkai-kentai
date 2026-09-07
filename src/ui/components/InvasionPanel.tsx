@@ -1,8 +1,9 @@
 import { bossHp, depthName, targetCount, targetHp } from '../../game/targets.ts'
 import { getConfig } from '../../store/gameStore.ts'
-import { fmt, mmss } from '../format.ts'
+import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
 import { CircleTimer } from './CircleTimer.tsx'
+import { LogPanel } from './LogPanel.tsx'
 import { InvasionViewer } from './InvasionViewer.tsx'
 import { Sprite } from './Sprite.tsx'
 
@@ -37,11 +38,13 @@ export function InvasionPanel() {
             <span>あと {fmt(toDraft)} 体</span>
             <span>累計 {fmt(s.producedTotal)} 体</span>
           </div>
-          <p className="idle-note">
-            検体を生産すると突然変異の機会が訪れる。
-            生産量が伸びるほど、提示される変異は珍しくなる。
-          </p>
         </div>
+
+        <LogPanel
+          s={s}
+          title="観測記録"
+          empty="まだ記録がない。検体を生産すると実験機会が訪れる。"
+        />
       </div>
     )
   }
@@ -85,21 +88,7 @@ export function InvasionPanel() {
         </div>
       </div>
 
-      <div className="panel scroll">
-        <div className="panel-title">観測記録</div>
-        {s.log.length === 0 ? (
-          <p className="idle-note">まだ記録がない。</p>
-        ) : (
-          <ol className="log">
-            {s.log.slice(0, 16).map((e, i) => (
-              <li key={`${e.t}-${i}`} className="log-row" data-kind={e.kind}>
-                <span className="log-time">{mmss(e.t)}</span>
-                <span className="log-text">{e.text}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>
+      <LogPanel s={s} title="観測記録" empty="まだ記録がない。" />
     </div>
   )
 }
