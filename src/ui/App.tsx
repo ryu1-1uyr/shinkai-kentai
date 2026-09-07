@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { getScreen, startLoop } from '../store/gameStore.ts'
 import { LabScreen } from './components/LabScreen.tsx'
+import { useAtmosphere } from './useAtmosphere.ts'
 import { useGame } from './useGame.ts'
 import { DebugPanel } from './components/DebugPanel.tsx'
 import { DraftOverlay } from './components/DraftOverlay.tsx'
@@ -12,6 +13,7 @@ import { StockPanel } from './components/StockPanel.tsx'
 
 export function App() {
   useGame()
+  useAtmosphere()
   useEffect(() => {
     startLoop()
   }, [])

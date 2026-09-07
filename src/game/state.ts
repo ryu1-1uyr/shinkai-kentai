@@ -5,6 +5,17 @@ import type { Inventory } from './inventory.ts'
 import { type MutationDef, type MutationId, type MutationMask, type MutationRanks, birthDistribution } from './mutations.ts'
 
 export type Phase = 'culture' | 'invasion' | 'over'
+
+export type LogKind = 'hit' | 'boss' | 'depth' | 'draft' | 'system'
+export type LogEntry = { t: number; kind: LogKind; text: string }
+
+/** ログの保持件数。表示に使うぶんだけあればよい */
+const LOG_LIMIT = 40
+
+export function pushLog(s: GameState, kind: LogKind, text: string): void {
+  s.log.unshift({ t: s.t, kind, text })
+  if (s.log.length > LOG_LIMIT) s.log.length = LOG_LIMIT
+}
 export type EndReason = 'timeout' | 'running'
 
 export type GameState = {
@@ -45,6 +56,9 @@ export type GameState = {
 
   rngState: number
 
+  /** 交戦ログ。新しいものが先頭。表示用なので上限を設けて捨てる */
+  log: LogEntry[]
+
   /** 恒久強化の効果。ラン中は変化しない */
   meta: MetaEffects
   /** 残りの引き直し回数 */
@@ -77,6 +91,7 @@ export function createState(cfg: Config, seed: number, meta?: MetaEffects): Game
     clearedDepth: 0,
     score: 0,
     rngState: seed >>> 0,
+    log: [],
     meta: eff,
     rerollsLeft: eff.rerolls,
     reserveUsed: false,

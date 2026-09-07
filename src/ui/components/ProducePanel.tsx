@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { BUILDINGS, costOf } from '../../game/buildings.ts'
 import { totalSharks } from '../../game/inventory.ts'
 import { clickValue, cultureRate, launchRate, sharkRate } from '../../game/tick.ts'
@@ -26,12 +27,39 @@ function effectText(id: string, cfg: ReturnType<typeof getConfig>): string {
 export function ProducePanel() {
   const s = useGame()
   const cfg = getConfig()
+  const areaRef = useRef<HTMLButtonElement>(null)
+
+  /**
+   * クリックの手応え。
+   * インクリメンタルは同じ操作を何百回も繰り返すジャンルなので、
+   * 1 回ごとに反応が返らないと手が止まる。
+   * React の再描画には乗せず、DOM を直接生やして CSS で消す。
+   */
+  const onCollect = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const gained = clickValue(s, cfg)
+    manualClick()
+    const host = areaRef.current
+    if (!host) return
+    const r = host.getBoundingClientRect()
+    const pop = document.createElement('span')
+    pop.className = 'pop'
+    pop.textContent = `+${fmt(gained)}`
+    pop.style.setProperty('--px', `${e.clientX - r.left}px`)
+    pop.style.setProperty('--py', `${e.clientY - r.top}px`)
+    pop.style.setProperty('--drift', `${(Math.random() - 0.5) * 40}px`)
+    pop.addEventListener('animationend', () => pop.remove(), { once: true })
+    host.appendChild(pop)
+    host.classList.remove('is-hit')
+    // 連打しても毎回アニメーションが走るよう、一度リセットしてから付け直す
+    void host.offsetWidth
+    host.classList.add('is-hit')
+  }
 
   return (
     <div className="col area-produce">
-      <button className="click-area" onClick={manualClick}>
-        <Sprite kind="resource" id="culture" />
-        <span>培養液を採取</span>
+      <button className="click-area" ref={areaRef} onClick={onCollect}>
+        <Sprite kind="resource" id="culture" size={48} />
+        <span className="click-label">培養液を採取</span>
         <span className="click-hint">+{fmt(clickValue(s, cfg))} / クリック</span>
       </button>
 
@@ -70,7 +98,12 @@ export function ProducePanel() {
           const auto = getAutoBuyTarget() === i
           return (
             <div key={b.id} className="buy-row">
-              <button className="buy" disabled={s.culture < cost} onClick={() => buy(i)}>
+              <button
+                className="buy"
+                data-afford={s.culture >= cost}
+                disabled={s.culture < cost}
+                onClick={() => buy(i)}
+              >
                 <Sprite kind="building" id={b.id} />
                 <span className="buy-name">
                   {b.name}

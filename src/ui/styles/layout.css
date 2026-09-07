@@ -30,12 +30,26 @@ body::after {
   z-index: 100;
 }
 
-/* 水中の光と、四隅に落ちる暗がり */
+/*
+ * 水中の光と、四隅に落ちる暗がり。
+ * 色は深度に連動する（useAtmosphere が CSS 変数を書き出す）。
+ * 深度 11 で暗闇から空へ反転し、深度計が壊れていることが画面全体で分かる。
+ */
 body::before {
   background:
-    radial-gradient(120% 80% at 50% -10%, #0f2b30 0%, transparent 55%),
-    radial-gradient(100% 100% at 50% 120%, #000000 0%, transparent 60%),
-    radial-gradient(140% 110% at 50% 50%, transparent 45%, #000000cc 100%);
+    radial-gradient(120% 80% at 50% -10%, var(--air-top, #0f2b30) 0%, transparent 58%),
+    radial-gradient(110% 100% at 50% 120%, var(--air-bottom, #000000) 0%, transparent 62%),
+    radial-gradient(140% 110% at 50% 50%, transparent 42%, #000000cc 100%);
+  transition: background 900ms ease-out;
+}
+
+/* 上昇に転じたら、光源が下ではなく上に来る */
+:root[data-ascending='true'] body::before,
+html[data-ascending='true'] body::before {
+  background:
+    radial-gradient(130% 90% at 50% -20%, var(--air-top, #5a90c0) 0%, transparent 66%),
+    radial-gradient(100% 80% at 50% 130%, var(--air-bottom, #0a1626) 0%, transparent 55%),
+    radial-gradient(150% 120% at 50% 40%, transparent 50%, #00000099 100%);
 }
 
 /* 粒子（フィルムグレイン） */

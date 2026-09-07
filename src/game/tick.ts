@@ -2,8 +2,8 @@ import type { Config } from './config.ts'
 import { BUILDINGS, BUILDING_INDEX } from './buildings.ts'
 import { addSharks, launchWeakest, totalSharks } from './inventory.ts'
 import { MUTATIONS, type MutationDef, type MutationId, offerWeight } from './mutations.ts'
-import { type GameState, refreshBirthDist, rng } from './state.ts'
-import { bossHp, perDepthTime, targetCount, targetHp } from './targets.ts'
+import { type GameState, pushLog, refreshBirthDist, rng } from './state.ts'
+import { bossHp, depthName, perDepthTime, targetCount, targetHp } from './targets.ts'
 
 /** そのティックのプレイヤー入力。シミュレータでは方針関数が埋める */
 export type TickInput = {
@@ -110,19 +110,24 @@ function beginDepth(s: GameState, cfg: Config): void {
 function advanceTarget(s: GameState, cfg: Config, overkill: number, mult: number): number {
   if (s.onBoss) {
     // 深度突破
+    pushLog(s, 'boss', `${depthName(s.depth).boss} を破壊`)
     s.clearedDepth += 1
     if (cfg.invasion.timerModel === 'runWide') {
       s.timeLeft += cfg.invasion.runWideBonusPerDepth
     }
     s.depth += 1
     beginDepth(s, cfg)
+    pushLog(s, 'depth', `深度 ${s.depth} — ${depthName(s.depth).zone}`)
     return overkill * mult
   }
   s.destroyed += 1
+  const names = depthName(s.depth)
   if (s.destroyed >= targetCount(s.depth, cfg)) {
+    pushLog(s, 'boss', `${names.boss} が出現`)
     s.onBoss = true
     s.currentHp = bossHp(s.depth, cfg)
   } else {
+    pushLog(s, 'hit', `${names.normal} を破壊  ${s.destroyed}/${targetCount(s.depth, cfg)}`)
     s.currentHp = targetHp(s.depth, cfg)
   }
   return overkill * mult
@@ -166,6 +171,7 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
   // --- フェーズ遷移 ---
   if (s.phase === 'culture' && s.t >= cfg.culturePhaseSec) {
     s.phase = 'invasion'
+    pushLog(s, 'depth', `深度 ${s.depth} — ${depthName(s.depth).zone}`)
     s.timeLeft = cfg.invasion.timerModel === 'runWide' ? cfg.invasion.runWideBase : 0
     beginDepth(s, cfg)
   }
@@ -184,8 +190,13 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
       // 予備電源。逆探知の完了を 1 回だけ遅らせる
       s.reserveUsed = true
       s.timeLeft += s.meta.reserveSeconds
+      pushLog(s, 'system', `予備電源が作動  +${s.meta.reserveSeconds} 秒`)
     } else {
-      if (s.meta.lastStand) finalVolley(s, cfg)
+      if (s.meta.lastStand) {
+        pushLog(s, 'system', '緊急浮上 — 残存する検体をすべて投入')
+        finalVolley(s, cfg)
+      }
+      pushLog(s, 'system', '逆探知が完了。軌道より照射を確認')
       s.phase = 'over'
       s.endReason = 'timeout'
     }
@@ -235,6 +246,7 @@ export function applyDraft(s: GameState, cfg: Config, index: number): void {
   const chosen = offers[Math.max(0, Math.min(index, offers.length - 1))]
   s.ranks.set(chosen.id, (s.ranks.get(chosen.id) ?? 0) + 1)
   refreshBirthDist(s, cfg)
+  pushLog(s, 'draft', `${chosen.name} を確認  R${s.ranks.get(chosen.id)}`)
   s.draftCount += 1
   s.nextDraftAt += cfg.mutation.draftThresholdBase * Math.pow(cfg.mutation.draftThresholdGrowth, s.draftCount)
   s.pendingOffers = null

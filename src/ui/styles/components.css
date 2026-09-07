@@ -87,12 +87,17 @@
 }
 .speed button[data-active="true"] { color: var(--c-text); border-color: var(--c-line-hi); background: var(--c-panel-hi); }
 
-/* ---- クリック領域 ---- */
+/* ---- クリック領域 ----
+ * 最初の 60 秒で唯一の操作なので、画面の中で最も大きく・押した感触が返る要素にする。 */
 .click-area {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   border: 1px solid var(--c-line-hi);
   border-radius: var(--r-2);
-  background: var(--c-bg-deep);
+  background:
+    radial-gradient(90% 120% at 50% 0%, #12313380 0%, transparent 70%),
+    var(--c-bg-deep);
   color: var(--c-culture);
   font-family: var(--font-ui);
   font-size: var(--fs-md);
@@ -103,10 +108,46 @@
   align-items: center;
   gap: var(--sp-2);
   user-select: none;
+  transition: border-color 120ms, background-color 60ms;
 }
-.click-area:active { background: var(--c-panel); }
-.click-area .sprite { --sprite-size: 40px; }
-.click-hint { color: var(--c-text-mute); font-size: var(--fs-xs); }
+.click-area:hover { border-color: var(--c-culture); }
+.click-area:active { background-color: #16383a; }
+.click-area .sprite { --sprite-size: 48px; }
+.click-label { font-family: var(--font-display); font-size: var(--fs-lg); letter-spacing: 0.04em; }
+.click-hint { color: var(--c-text-dim); font-size: var(--fs-xs); font-family: var(--font-num); }
+
+/* 押した瞬間の脈動 */
+.click-area.is-hit { animation: click-pulse 180ms steps(3, end); }
+@keyframes click-pulse {
+  0% { box-shadow: inset 0 0 0 0 #45e0c800; }
+  40% { box-shadow: inset 0 0 40px 0 #45e0c840; }
+  100% { box-shadow: inset 0 0 0 0 #45e0c800; }
+}
+
+/* 飛んでいく数値 */
+.pop {
+  position: absolute;
+  left: var(--px);
+  top: var(--py);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  color: var(--c-culture);
+  text-shadow: 0 0 6px #45e0c866;
+  animation: pop-rise 700ms ease-out forwards;
+  white-space: nowrap;
+}
+@keyframes pop-rise {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+  15%  { opacity: 1; transform: translate(-50%, -60%) scale(1.1); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--drift)), -190%) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .click-area.is-hit { animation: none; }
+  .pop { animation-duration: 260ms; }
+}
 
 /* ---- 施設リスト ---- */
 .buy {
@@ -432,3 +473,116 @@
 .slab-cell span { color: var(--c-text-dim); font-size: var(--fs-xs); text-align: center; }
 
 .shark-icon { image-rendering: pixelated; flex: 0 0 auto; }
+
+/* ---- パネルの階層 ----
+ * すべて同じ見た目だと、生死を分けるタイマーと静的な説明文が同格に見える。
+ * その画面の主役だけ縁を明るくし、上端に光の筋を入れる。 */
+.panel.is-primary {
+  border-color: var(--c-line-hi);
+  background:
+    linear-gradient(180deg, var(--air-glow, #45e0c822) 0%, transparent 22%),
+    var(--c-panel);
+}
+.panel.is-primary::before {
+  content: '';
+  display: block;
+  height: 1px;
+  margin: calc(var(--sp-3) * -1) calc(var(--sp-3) * -1) 0;
+  background: linear-gradient(90deg, transparent, var(--air-accent, #45e0c8), transparent);
+  opacity: 0.55;
+}
+
+/* ---- 汎用ゲージ ---- */
+.gauge {
+  height: 8px;
+  background: var(--c-bg-deep);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-1);
+  overflow: hidden;
+}
+.gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c-culture), var(--c-shark));
+  transition: width 200ms linear;
+}
+
+/* ---- 交戦記録 ---- */
+.log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.log-row {
+  display: flex;
+  gap: var(--sp-3);
+  font-size: var(--fs-xs);
+  padding: 2px 0;
+  border-left: 2px solid transparent;
+  padding-left: var(--sp-2);
+  animation: log-in 220ms ease-out;
+}
+.log-time { font-family: var(--font-num); color: var(--c-text-mute); flex: 0 0 auto; }
+.log-text { color: var(--c-text-dim); }
+.log-row[data-kind='hit'] { border-left-color: var(--c-line-hi); }
+.log-row[data-kind='boss'] { border-left-color: var(--c-boss); }
+.log-row[data-kind='boss'] .log-text { color: var(--c-boss); }
+.log-row[data-kind='depth'] { border-left-color: var(--c-culture); }
+.log-row[data-kind='depth'] .log-text { color: var(--c-culture); }
+.log-row[data-kind='draft'] { border-left-color: var(--c-uncommon); }
+.log-row[data-kind='draft'] .log-text { color: var(--c-uncommon); }
+.log-row[data-kind='system'] { border-left-color: var(--c-danger); }
+.log-row[data-kind='system'] .log-text { color: var(--c-danger); }
+@keyframes log-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---- ビュワーの空状態 ---- */
+.viewer-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-text-mute);
+  font-size: var(--fs-xs);
+  pointer-events: none;
+}
+
+/* ---- HUD の待機表示 ---- */
+.hud-standby {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  color: var(--c-text-mute);
+  letter-spacing: 0.08em;
+}
+
+/* ---- 購入可否を色と形でも示す ---- */
+.buy { border-left: 3px solid transparent; }
+.buy[data-afford='true'] { border-left-color: var(--c-culture); }
+.buy[data-afford='true'] .buy-cost { color: var(--c-culture); }
+.buy[data-afford='false'] .buy-cost { color: var(--c-text-mute); }
+
+/* ---- ドラフトの出現 ----
+ * 散発的な微細アニメーションより、1 箇所を作り込む方が効く。
+ * ラン中で最も重要な選択なので、ここに山を作る。 */
+.overlay { animation: overlay-in 180ms ease-out; }
+@keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+.modal { animation: modal-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1); }
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+.cards .card { animation: card-in 320ms ease-out backwards; }
+.cards .card:nth-child(1) { animation-delay: 60ms; }
+.cards .card:nth-child(2) { animation-delay: 130ms; }
+.cards .card:nth-child(3) { animation-delay: 200ms; }
+.cards .card:nth-child(4) { animation-delay: 270ms; }
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+.card { transition: border-color 120ms, background-color 120ms, transform 120ms; }
+.card:hover { transform: translateY(-3px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay, .modal, .cards .card, .log-row { animation: none; }
+  .card:hover { transform: none; }
+}

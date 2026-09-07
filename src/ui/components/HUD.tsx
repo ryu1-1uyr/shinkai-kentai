@@ -16,8 +16,8 @@ export function HUD() {
       <div>
         <div className="hud-phase">{inCulture ? '培養フェーズ' : '侵略フェーズ'}</div>
         <div className="hud-depth">
-          {inCulture ? '—' : `深度 ${s.depth}`}
-          <span className="hud-depth-name"> {inCulture ? '検体を増やせ' : name.zone}</span>
+          {inCulture ? '培養槽' : `深度 ${s.depth}`}
+          <span className="hud-depth-name">{inCulture ? '安全' : name.zone}</span>
         </div>
       </div>
 
@@ -40,9 +40,14 @@ export function HUD() {
         </span>
       )}
 
-      <div className="hud-timer" data-warn={!inCulture && s.timeLeft <= 15}>
-        {mmss(inCulture ? 60 - s.t : s.timeLeft)}
-      </div>
+      {/* 培養中は中央に円タイマーが出ているので、同じ数字を二重に出さない */}
+      {inCulture ? (
+        <div className="hud-standby">検体を増やせ</div>
+      ) : (
+        <div className="hud-timer" data-warn={s.timeLeft <= 15}>
+          {mmss(s.timeLeft)}
+        </div>
+      )}
     </div>
   )
 }

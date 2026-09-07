@@ -1,6 +1,6 @@
 import { bossHp, depthName, targetCount, targetHp } from '../../game/targets.ts'
 import { getConfig } from '../../store/gameStore.ts'
-import { fmt } from '../format.ts'
+import { fmt, mmss } from '../format.ts'
 import { useGame } from '../useGame.ts'
 import { CircleTimer } from './CircleTimer.tsx'
 import { InvasionViewer } from './InvasionViewer.tsx'
@@ -12,9 +12,11 @@ export function InvasionPanel() {
 
   if (s.phase === 'culture') {
     const left = Math.max(0, cfg.culturePhaseSec - s.t)
+    const toDraft = Math.max(0, s.nextDraftAt - s.producedTotal)
+    const draftPct = Math.min(100, (s.producedTotal / Math.max(1, s.nextDraftAt)) * 100)
     return (
       <div className="col area-invasion">
-        <div className="panel">
+        <div className="panel is-primary">
           <div className="panel-title">培養フェーズ</div>
           <CircleTimer
             ratio={left / cfg.culturePhaseSec}
@@ -23,8 +25,21 @@ export function InvasionPanel() {
           />
           <p className="idle-note">
             検体は投入するまで失われない。いま生産した分はそのまま戦力になる。
-            <br />
-            侵略が始まっても生産は続けられるため、手を止める必要はない。
+          </p>
+        </div>
+
+        <div className="panel">
+          <div className="panel-title">次の実験機会</div>
+          <div className="gauge">
+            <div className="gauge-fill" style={{ width: `${draftPct}%` }} />
+          </div>
+          <div className="launch-info">
+            <span>あと {fmt(toDraft)} 体</span>
+            <span>累計 {fmt(s.producedTotal)} 体</span>
+          </div>
+          <p className="idle-note">
+            検体を生産すると突然変異の機会が訪れる。
+            生産量が伸びるほど、提示される変異は珍しくなる。
           </p>
         </div>
       </div>
@@ -38,7 +53,7 @@ export function InvasionPanel() {
 
   return (
     <div className="col area-invasion">
-      <div className="panel">
+      <div className="panel is-primary">
         <div className="panel-title">{name.zone}</div>
         <div className="target">
           <div className="target-head">
@@ -70,13 +85,20 @@ export function InvasionPanel() {
         </div>
       </div>
 
-      <div className="panel">
+      <div className="panel scroll">
         <div className="panel-title">交戦記録</div>
-        <p className="idle-note">
-          検体は戦闘力の低い個体から自動で出撃する。投入された個体は必ず失われる。
-          <br />
-          深度を突破するたびに残り時間が +{cfg.invasion.runWideBonusPerDepth} 秒される。
-        </p>
+        {s.log.length === 0 ? (
+          <p className="idle-note">まだ交戦していない。</p>
+        ) : (
+          <ol className="log">
+            {s.log.slice(0, 14).map((e, i) => (
+              <li key={`${e.t}-${i}`} className="log-row" data-kind={e.kind}>
+                <span className="log-time">{mmss(e.t)}</span>
+                <span className="log-text">{e.text}</span>
+              </li>
+            ))}
+          </ol>
+        )}
       </div>
     </div>
   )

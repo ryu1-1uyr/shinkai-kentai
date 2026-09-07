@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { sortedByPower } from '../../game/inventory.ts'
+import { sortedByPower, totalSharks } from '../../game/inventory.ts'
 import { launchRate } from '../../game/tick.ts'
 import { pixelIcon } from '../../render/icons.ts'
 import { sharkSprite } from '../../render/sharkSprite.ts'
@@ -196,9 +196,13 @@ export function InvasionViewer() {
     }
   }, [])
 
+  const s = getState()
+  const empty = totalSharks(s.inv) < 1
+
   return (
     <div className="viewer">
       <canvas className="viewer-canvas" ref={canvasRef} />
+      {empty && <div className="viewer-empty">投入できる検体がない — 繁殖槽を増やせ</div>}
     </div>
   )
 }
