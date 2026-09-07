@@ -33,13 +33,34 @@ export const RARITY: Record<Rarity, { weight: number; scale: number }> = {
 /** 重みの立ち上がりの鋭さ。0.85 は「生産 100 倍で出現率 50 倍」に相当する */
 export const RARITY_RAMP = 0.85
 
+export type MutationMask = number
+
 /**
- * 在庫のキーはビットマスク（`1 << bit`）で持つ。
- * JS のビット演算は 32bit 符号付きのため、**変異は最大 31 種まで**。
- * それ以上に増やす場合はキーの表現を変える必要があるが、
- * ビット操作はこのファイルに閉じているので差し替えは局所的に済む。
+ * 在庫のキーは「変異ごとのビットを立てた整数」で持つ。
+ *
+ * ビット演算子（`1 << bit`）は 32bit 符号付きに丸められるため 31 種で頭打ちになる。
+ * そこで `2 ** bit` の算術で扱う。JS の数値は 2^53 まで整数を正確に表せるので、
+ * **変異は最大 53 種**まで増やせる。Map のキーも数値のままなので速度は変わらない。
+ *
+ * ビット操作は maskOf / hasMutation / addMutation に閉じてあるので、
+ * さらに増やしたくなった場合もここだけ差し替えればよい。
  */
-export const MAX_MUTATIONS = 31
+export const MAX_MUTATIONS = 53
+
+/** その変異 1 つぶんのマスク */
+export function maskOf(def: { bit: number }): MutationMask {
+  return Math.pow(2, def.bit)
+}
+
+/** マスクにその変異が含まれるか */
+export function hasMutation(mask: MutationMask, def: { bit: number }): boolean {
+  return Math.floor(mask / Math.pow(2, def.bit)) % 2 === 1
+}
+
+/** マスクに変異を足す（既に含まれていれば何もしない） */
+export function addMutation(mask: MutationMask, def: { bit: number }): MutationMask {
+  return hasMutation(mask, def) ? mask : mask + maskOf(def)
+}
 
 export type MutationDef = {
   id: MutationId
@@ -120,8 +141,6 @@ export function powerAt(def: MutationDef, rank: number, cfg: Config): number {
   return def.basePower * Math.pow(cfg.mutation.rankPowerMult, rank - 1)
 }
 
-export type MutationMask = number
-
 /** 保有変異の集合。key は MutationId、value はランク */
 export type MutationRanks = Map<MutationId, number>
 
@@ -137,7 +156,7 @@ export function powerOfMask(
 ): number {
   let p = cfg.shark.basePower * powerMult
   for (const def of MUTATIONS) {
-    if (mask & (1 << def.bit)) p *= powerAt(def, ranks.get(def.id) ?? 0, cfg)
+    if (hasMutation(mask, def)) p *= powerAt(def, ranks.get(def.id) ?? 0, cfg)
   }
   return p
 }
@@ -155,7 +174,7 @@ export function birthDistribution(ranks: MutationRanks, cfg: Config): Array<[Mut
     const next: Array<[MutationMask, number]> = []
     for (const [mask, prob] of dist) {
       if (prob * (1 - p) > 0) next.push([mask, prob * (1 - p)])
-      if (prob * p > 0) next.push([mask | (1 << def.bit), prob * p])
+      if (prob * p > 0) next.push([addMutation(mask, def), prob * p])
     }
     dist = next
   }
@@ -175,6 +194,6 @@ export function expectedPower(ranks: MutationRanks, cfg: Config, powerMult = 1):
 
 /** 複合サメの名前。変異 ID の定義順に接頭辞を連結するだけ */
 export function nameOfMask(mask: MutationMask): string {
-  const parts = MUTATIONS.filter((m) => mask & (1 << m.bit)).map((m) => m.prefix)
+  const parts = MUTATIONS.filter((m) => hasMutation(mask, m)).map((m) => m.prefix)
   return parts.length === 0 ? '通常サメ' : parts.join('') + 'サメ'
 }

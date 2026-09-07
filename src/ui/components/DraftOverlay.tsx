@@ -1,4 +1,4 @@
-import { powerAt, rateAt } from '../../game/mutations.ts'
+import { maskOf, powerAt, rateAt } from '../../game/mutations.ts'
 import { chooseDraft, getConfig, reroll } from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
@@ -40,7 +40,7 @@ export function DraftOverlay() {
             const next = cur + 1
             return (
               <button key={m.id} className="card" data-rarity={m.rarity} onClick={() => chooseDraft(i)}>
-                <SharkIcon mask={1 << m.bit} height={34} />
+                <SharkIcon mask={maskOf(m)} height={34} />
                 <span className="card-rarity">{RARITY_LABEL[m.rarity]}</span>
                 <span className="card-name">{m.name}</span>
                 <span className="card-effect">

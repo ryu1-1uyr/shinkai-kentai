@@ -1,6 +1,6 @@
 import type { MutationDef, MutationId, MutationMask } from '../game/mutations.ts'
 import { drawLayer, onAssetLoaded } from './assets.ts'
-import { MUTATIONS } from '../game/mutations.ts'
+import { hasMutation, MUTATIONS } from '../game/mutations.ts'
 import {
   BODY_W,
   BODY_X,
@@ -272,7 +272,7 @@ export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
   const hit = cache.get(key)
   if (hit) return hit
 
-  const defs: MutationDef[] = MUTATIONS.filter((m) => mask & (1 << m.bit))
+  const defs: MutationDef[] = MUTATIONS.filter((m) => hasMutation(mask, m))
 
   // --- チャンネルごとに集約 ---
   const parts = new Map<PartSlot, { id: MutationId; part: NonNullable<Visual['part']> }>()

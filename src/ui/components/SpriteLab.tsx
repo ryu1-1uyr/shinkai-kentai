@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { MUTATIONS, nameOfMask } from '../../game/mutations.ts'
+import { maskOf, MUTATIONS, nameOfMask } from '../../game/mutations.ts'
 import { sharkSprite } from '../../render/sharkSprite.ts'
 import { useAssetVersion } from '../useAssetVersion.ts'
 
@@ -26,7 +26,7 @@ function Cell({ mask, label, scale = 2 }: { mask: number; label: string; scale?:
   )
 }
 
-const bit = (id: string) => 1 << MUTATIONS.find((m) => m.id === id)!.bit
+const bit = (id: string) => maskOf(MUTATIONS.find((m) => m.id === id)!)
 
 const COMBOS: Array<[number, string]> = [
   [bit('twinHead') | bit('frenzy') | bit('giant'), '双頭狂乱メガ'],
@@ -38,7 +38,7 @@ const COMBOS: Array<[number, string]> = [
   [bit('ancient') | bit('eldritch') | bit('tentacle') | bit('abyss'), '古代アビスタコ邪神'],
   [bit('meteor') | bit('giant') | bit('volt'), 'メガサンダーメテオ'],
   [
-    MUTATIONS.reduce((a, m) => a | (1 << m.bit), 0),
+    MUTATIONS.reduce((a, m) => a + maskOf(m), 0),
     '全部乗せ（18種）',
   ],
 ]
@@ -58,7 +58,7 @@ export function SpriteLab({ onClose }: { onClose: () => void }) {
         <div className="slab-grid">
           <Cell mask={0} label="通常サメ" />
           {MUTATIONS.map((m) => (
-            <Cell key={m.id} mask={1 << m.bit} label={m.name} />
+            <Cell key={m.id} mask={maskOf(m)} label={m.name} />
           ))}
         </div>
 
