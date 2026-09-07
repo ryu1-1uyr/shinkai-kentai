@@ -1,7 +1,13 @@
 import { BUILDINGS, costOf } from '../../game/buildings.ts'
 import { totalSharks } from '../../game/inventory.ts'
 import { clickValue, cultureRate, launchRate, sharkRate } from '../../game/tick.ts'
-import { buy, getConfig, manualClick } from '../../store/gameStore.ts'
+import {
+  buy,
+  getAutoBuyTarget,
+  getConfig,
+  manualClick,
+  setAutoBuyTarget,
+} from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
 import { Sprite } from './Sprite.tsx'
@@ -61,18 +67,32 @@ export function ProducePanel() {
         <div className="panel-title">設備</div>
         {BUILDINGS.map((b, i) => {
           const cost = costOf(b, s.buildings[i])
+          const auto = getAutoBuyTarget() === i
           return (
-            <button key={b.id} className="buy" disabled={s.culture < cost} onClick={() => buy(i)}>
-              <Sprite kind="building" id={b.id} />
-              <span className="buy-name">
-                {b.name}
-                <span className="buy-effect">{effectText(b.id, cfg)}</span>
-              </span>
-              <span className="buy-right">
-                <span className="buy-cost">{fmt(cost)}</span>
-                <span className="buy-owned">所持 {s.buildings[i]}</span>
-              </span>
-            </button>
+            <div key={b.id} className="buy-row">
+              <button className="buy" disabled={s.culture < cost} onClick={() => buy(i)}>
+                <Sprite kind="building" id={b.id} />
+                <span className="buy-name">
+                  {b.name}
+                  <span className="buy-effect">{effectText(b.id, cfg)}</span>
+                </span>
+                <span className="buy-right">
+                  <span className="buy-cost">{fmt(cost)}</span>
+                  <span className="buy-owned">所持 {s.buildings[i]}</span>
+                </span>
+              </button>
+              {s.meta.autoBuyOne && !s.meta.autoBuyAll && (
+                <button
+                  className="buy-auto"
+                  data-on={auto}
+                  title="定期発注の対象にする"
+                  aria-label={`${b.name}を定期発注する`}
+                  onClick={() => setAutoBuyTarget(i)}
+                >
+                  {auto ? '☑' : '☐'}
+                </button>
+              )}
+            </div>
           )
         })}
       </div>

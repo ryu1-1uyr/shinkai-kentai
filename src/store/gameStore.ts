@@ -31,7 +31,9 @@ let running = false
 let screen: Screen = 'run'
 /** 直近のランで得た研究予算。リザルト表示に使う */
 let lastAward = 0
-let autoBuyOn = true
+let autoBuyAllOn = true
+/** 定期発注で自動購入する設備。BUILDINGS の添字。null なら未設定 */
+let autoBuyTarget: number | null = null
 /** このランの報酬を確定済みか */
 let awarded = false
 
@@ -88,12 +90,22 @@ export function getLastAward(): number {
   return lastAward
 }
 
-export function isAutoBuyOn(): boolean {
-  return autoBuyOn
+export function isAutoBuyAllOn(): boolean {
+  return autoBuyAllOn
 }
 
-export function toggleAutoBuy(): void {
-  autoBuyOn = !autoBuyOn
+export function toggleAutoBuyAll(): void {
+  autoBuyAllOn = !autoBuyAllOn
+  emit()
+}
+
+export function getAutoBuyTarget(): number | null {
+  return autoBuyTarget
+}
+
+/** 同じ設備をもう一度指定すると解除する */
+export function setAutoBuyTarget(index: number | null): void {
+  autoBuyTarget = autoBuyTarget === index ? null : index
   emit()
 }
 
@@ -128,22 +140,39 @@ export function canAfford(def: BuildingDef, owned: number): boolean {
   return state.culture >= costOf(def, owned)
 }
 
-/** 自動発注。買える設備を安い順に買う */
+/**
+ * 自動発注。
+ *  AI 発注   … 買える設備をすべて安い順に買う
+ *  定期発注  … 指定した 1 種類だけを買う（購入配分の判断は残る）
+ */
 function runAutoBuy(): void {
-  if (!autoBuyOn || !state.meta.autoBuy) return
-  for (let guard = 0; guard < 60; guard++) {
-    let best = -1
-    let bestCost = Infinity
-    for (let i = 0; i < BUILDINGS.length; i++) {
-      const c = costOf(BUILDINGS[i], state.buildings[i])
-      if (c <= state.culture && c < bestCost) {
-        bestCost = c
-        best = i
+  const m = state.meta
+  if (m.autoBuyAll && autoBuyAllOn) {
+    for (let guard = 0; guard < 60; guard++) {
+      let best = -1
+      let bestCost = Infinity
+      for (let i = 0; i < BUILDINGS.length; i++) {
+        const c = costOf(BUILDINGS[i], state.buildings[i])
+        if (c <= state.culture && c < bestCost) {
+          bestCost = c
+          best = i
+        }
       }
+      if (best < 0) return
+      state.culture -= bestCost
+      state.buildings[best] += 1
     }
-    if (best < 0) return
-    state.culture -= bestCost
-    state.buildings[best] += 1
+    return
+  }
+
+  if (m.autoBuyOne && autoBuyTarget !== null) {
+    const i = autoBuyTarget
+    for (let guard = 0; guard < 60; guard++) {
+      const c = costOf(BUILDINGS[i], state.buildings[i])
+      if (c > state.culture) return
+      state.culture -= c
+      state.buildings[i] += 1
+    }
   }
 }
 
@@ -168,6 +197,7 @@ export function startNewRun(): void {
   speed = 1
   lastAward = 0
   awarded = false
+  autoBuyTarget = null
   screen = 'run'
   emit()
 }

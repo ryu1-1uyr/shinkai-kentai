@@ -309,3 +309,19 @@
 .up-cost { margin-left: auto; font-family: var(--font-num); color: var(--c-score); white-space: nowrap; }
 
 .award { color: var(--c-score); }
+
+/* ---- 定期発注のチェック ---- */
+.buy-row { display: flex; align-items: stretch; gap: var(--sp-1); }
+.buy-row .buy { flex: 1; min-width: 0; }
+.buy-auto {
+  flex: 0 0 auto;
+  width: 34px;
+  background: transparent;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-1);
+  color: var(--c-text-mute);
+  font-size: var(--fs-md);
+  cursor: pointer;
+}
+.buy-auto:hover { border-color: var(--c-line-hi); color: var(--c-text); }
+.buy-auto[data-on="true"] { color: var(--c-culture); border-color: var(--c-culture); }

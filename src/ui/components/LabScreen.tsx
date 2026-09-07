@@ -67,6 +67,30 @@ export function LabScreen() {
             })}
 
           <div className="panel-title" style={{ marginTop: 'var(--sp-3)' }}>
+            特殊装備 — 買い切りで挙動が変わる
+          </div>
+          {visibleUnlocks
+            .filter((u) => u.kind === 'unique')
+            .map((u) => {
+              const owned = meta.unlocked.includes(u.id)
+              return (
+                <button
+                  key={u.id}
+                  className="up"
+                  data-owned={owned}
+                  disabled={owned || meta.budget < u.cost}
+                  onClick={() => purchaseUnlock(u.id)}
+                >
+                  <span className="up-name">
+                    {u.name}
+                    <span className="up-detail">{u.detail}</span>
+                  </span>
+                  <span className="up-cost">{owned ? '装備済み' : fmt(u.cost)}</span>
+                </button>
+              )
+            })}
+
+          <div className="panel-title" style={{ marginTop: 'var(--sp-3)' }}>
             利便性
           </div>
           {visibleUnlocks

@@ -1,4 +1,4 @@
-import { getSpeed, isAutoBuyOn, setSpeed, type Speed, toggleAutoBuy } from '../../store/gameStore.ts'
+import { getSpeed, isAutoBuyAllOn, setSpeed, type Speed, toggleAutoBuyAll } from '../../store/gameStore.ts'
 import { depthName } from '../../game/targets.ts'
 import { mmss } from '../format.ts'
 import { useGame } from '../useGame.ts'
@@ -27,9 +27,9 @@ export function HUD() {
             ×{v}
           </button>
         ))}
-        {s.meta.autoBuy && (
-          <button data-active={isAutoBuyOn()} onClick={toggleAutoBuy}>
-            自動発注
+        {s.meta.autoBuyAll && (
+          <button data-active={isAutoBuyAllOn()} onClick={toggleAutoBuyAll}>
+            AI 発注
           </button>
         )}
       </div>

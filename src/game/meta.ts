@@ -115,7 +115,7 @@ export type UnlockDef = {
   name: string
   detail: string
   cost: number
-  kind: 'family' | 'qol'
+  kind: 'family' | 'qol' | 'unique'
   family?: Family
   /** これを買っていないと解禁されない */
   requires?: string
@@ -150,6 +150,27 @@ export const UNLOCKS: UnlockDef[] = [
   },
   { id: 'speed2', name: '倍速 ×2', detail: '実験の進行を 2 倍速にできる', cost: 300, kind: 'qol' },
   {
+    id: 'doubleClick',
+    name: 'ダブルクリック',
+    detail: '手動採取で得られる培養液が 2 倍になる',
+    cost: 700,
+    kind: 'unique',
+  },
+  {
+    id: 'autoBuyOne',
+    name: '定期発注',
+    detail: '設備を 1 種類だけ選んで自動購入できる（選び直しは自由）',
+    cost: 1200,
+    kind: 'qol',
+  },
+  {
+    id: 'feederSynergy',
+    name: '給餌連動',
+    detail: '給餌装置 1 個につき培養液の生産 +3%',
+    cost: 1800,
+    kind: 'unique',
+  },
+  {
     id: 'autoClick',
     name: '自動採取装置',
     detail: '毎秒 5 回ぶんの培養液を自動で採取する',
@@ -158,11 +179,12 @@ export const UNLOCKS: UnlockDef[] = [
   },
   { id: 'speed4', name: '倍速 ×4', detail: '実験の進行を 4 倍速にできる', cost: 2000, kind: 'qol', requires: 'speed2' },
   {
-    id: 'autoBuy',
-    name: '設備の自動発注',
-    detail: '買える設備を自動で購入する（オン / オフ切り替え可）',
-    cost: 5000,
+    id: 'autoBuyAll',
+    name: 'AI 発注',
+    detail: '買える設備をすべて自動で購入する（オン / オフ切り替え可）',
+    cost: 12000,
     kind: 'qol',
+    requires: 'autoBuyOne',
   },
 ]
 
@@ -182,9 +204,14 @@ export type MetaEffects = {
   powerMult: number
   families: Set<Family>
   maxSpeed: 1 | 2 | 4
-  autoBuy: boolean
+  /** 設備を 1 種類だけ自動購入できる */
+  autoBuyOne: boolean
+  /** 買える設備をすべて自動購入する */
+  autoBuyAll: boolean
   /** 毎秒の自動クリック回数 */
   autoClick: number
+  /** 給餌装置の数に応じて培養液生産が伸びる。建物数に依存するため tick 側で適用する */
+  feederSynergy: boolean
 }
 
 export function metaEffects(m: MetaState): MetaEffects {
@@ -202,15 +229,17 @@ export function metaEffects(m: MetaState): MetaEffects {
   return {
     startTanks: lv('startTanks'),
     startSharks: lv('startSharks') * 25,
-    clickMult: 1 + 0.3 * lv('clickPower'),
+    clickMult: (1 + 0.3 * lv('clickPower')) * (has('doubleClick') ? 2 : 1),
     cultureMult: 1 + 0.25 * lv('cultureRate'),
     sharkRateMult: 1 + 0.25 * lv('sharkRate'),
     launchMult: 1 + 0.2 * lv('launchRate'),
     powerMult: 1 + 0.4 * lv('sharkPower'),
     families,
     maxSpeed: has('speed4') ? 4 : has('speed2') ? 2 : 1,
-    autoBuy: has('autoBuy'),
+    autoBuyOne: has('autoBuyOne'),
+    autoBuyAll: has('autoBuyAll'),
     autoClick: has('autoClick') ? 5 : 0,
+    feederSynergy: has('feederSynergy'),
   }
 }
 

@@ -12,10 +12,14 @@ export type TickInput = {
 
 export function cultureRate(s: GameState): number {
   let r = 0
+  let feeders = 0
   BUILDINGS.forEach((b, i) => {
     if (b.cultureRate) r += b.cultureRate * s.buildings[i]
+    if (b.id === 'feeder') feeders += s.buildings[i]
   })
-  return r * s.meta.cultureMult
+  // 給餌連動は所持数に依存するため、恒久強化の固定倍率とは別に掛ける
+  const synergy = s.meta.feederSynergy ? 1 + feeders * 0.03 : 1
+  return r * s.meta.cultureMult * synergy
 }
 
 export function clickValue(s: GameState, cfg: Config): number {
