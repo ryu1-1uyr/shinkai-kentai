@@ -7,6 +7,8 @@ import {
   buyUnlock,
   type MetaState,
   metaEffects,
+  NUMERIC_UPGRADES,
+  UNLOCKS,
 } from '../game/meta.ts'
 import { createState, type GameState } from '../game/state.ts'
 import { applyDraft, clickValue, rerollDraft, tick } from '../game/tick.ts'
@@ -261,4 +263,46 @@ export function startLoop(): void {
   running = true
   last = performance.now()
   requestAnimationFrame(frame)
+}
+
+// ---------------------------------------------------------------------------
+// デバッグ用。import.meta.env.DEV が false の本番ビルドでは呼び出し元ごと消える
+// ---------------------------------------------------------------------------
+
+/** 研究予算を加算する */
+export function debugGrant(amount: number): void {
+  meta.budget += amount
+  meta.lifetimeBudget += amount
+  saveMeta(meta)
+  emit()
+}
+
+/** 買い切りをすべて取得し、数値強化も最大まで上げる */
+export function debugUnlockAll(): void {
+  for (const u of UNLOCKS) {
+    if (!meta.unlocked.includes(u.id)) meta.unlocked.push(u.id)
+  }
+  for (const u of NUMERIC_UPGRADES) meta.levels[u.id] = u.maxLevel
+  saveMeta(meta)
+  startNewRun()
+}
+
+/** 培養フェーズを飛ばして侵略に入る */
+export function debugSkipCulture(): void {
+  if (state.phase !== 'culture') return
+  state.t = cfg.culturePhaseSec
+  emit()
+}
+
+/** 培養液を加算する */
+export function debugAddCulture(amount: number): void {
+  state.culture += amount
+  emit()
+}
+
+/** ランを即座に終了させる */
+export function debugEndRun(): void {
+  state.timeLeft = 0
+  state.reserveUsed = true
+  emit()
 }

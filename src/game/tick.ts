@@ -1,5 +1,5 @@
 import type { Config } from './config.ts'
-import { BUILDINGS } from './buildings.ts'
+import { BUILDINGS, BUILDING_INDEX } from './buildings.ts'
 import { addSharks, launchWeakest, totalSharks } from './inventory.ts'
 import { MUTATIONS, type MutationDef, type MutationId, offerWeight } from './mutations.ts'
 import { type GameState, refreshBirthDist, rng } from './state.ts'
@@ -10,15 +10,21 @@ export type TickInput = {
   clicksPerSec: number
 }
 
+/** 設備の所持数 */
+function owned(s: GameState, id: string): number {
+  const i = BUILDING_INDEX.get(id as never)
+  return i === undefined ? 0 : s.buildings[i]
+}
+
 export function cultureRate(s: GameState): number {
   let r = 0
-  let feeders = 0
   BUILDINGS.forEach((b, i) => {
     if (b.cultureRate) r += b.cultureRate * s.buildings[i]
-    if (b.id === 'feeder') feeders += s.buildings[i]
   })
-  // 給餌連動は所持数に依存するため、恒久強化の固定倍率とは別に掛ける
-  const synergy = s.meta.feederSynergy ? 1 + feeders * 0.03 : 1
+  // 設備連動は所持数に依存するため、恒久強化の固定倍率とは別に掛ける
+  let synergy = 1
+  if (s.meta.tankSynergy) synergy *= 1 + owned(s, 'tank') * 0.02
+  if (s.meta.feederSynergy) synergy *= 1 + owned(s, 'feeder') * 0.03
   return r * s.meta.cultureMult * synergy
 }
 
@@ -37,7 +43,8 @@ export function sharkRate(s: GameState): number {
     if (b.sharkRate) base += b.sharkRate * s.buildings[i]
     if (b.sharkRateMult) mult += b.sharkRateMult * s.buildings[i]
   })
-  return base * mult * s.meta.sharkRateMult
+  const synergy = s.meta.breederSynergy ? 1 + owned(s, 'breeder') * 0.02 : 1
+  return base * mult * s.meta.sharkRateMult * synergy
 }
 
 export function launchRate(s: GameState, cfg: Config): number {
@@ -45,7 +52,8 @@ export function launchRate(s: GameState, cfg: Config): number {
   BUILDINGS.forEach((b, i) => {
     if (b.launchRate) r += b.launchRate * s.buildings[i]
   })
-  return r * s.meta.launchMult
+  const synergy = s.meta.launcherSynergy ? 1 + owned(s, 'launcher') * 0.03 : 1
+  return r * s.meta.launchMult * synergy
 }
 
 /**

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { getScreen, startLoop } from '../store/gameStore.ts'
 import { LabScreen } from './components/LabScreen.tsx'
 import { useGame } from './useGame.ts'
+import { DebugPanel } from './components/DebugPanel.tsx'
 import { DraftOverlay } from './components/DraftOverlay.tsx'
 import { HUD } from './components/HUD.tsx'
 import { InvasionPanel } from './components/InvasionPanel.tsx'
@@ -15,7 +16,13 @@ export function App() {
     startLoop()
   }, [])
 
-  if (getScreen() === 'lab') return <LabScreen />
+  if (getScreen() === 'lab')
+    return (
+      <>
+        <LabScreen />
+        <DebugPanel />
+      </>
+    )
 
   return (
     <div className="app">
@@ -27,6 +34,7 @@ export function App() {
       <StockPanel />
       <DraftOverlay />
       <ResultOverlay />
+      <DebugPanel />
     </div>
   )
 }

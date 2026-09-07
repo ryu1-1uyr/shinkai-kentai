@@ -213,10 +213,31 @@ export const UNLOCKS: UnlockDef[] = [
     kind: 'unique',
   },
   {
+    id: 'tankSynergy',
+    name: '温度管理',
+    detail: '培養槽 1 個につき培養液の生産 +2%',
+    cost: 1000,
+    kind: 'unique',
+  },
+  {
     id: 'feederSynergy',
     name: '給餌連動',
     detail: '給餌装置 1 個につき培養液の生産 +3%',
     cost: 1800,
+    kind: 'unique',
+  },
+  {
+    id: 'breederSynergy',
+    name: '過密飼育',
+    detail: '繁殖槽 1 個につき検体の生産速度 +2%',
+    cost: 2600,
+    kind: 'unique',
+  },
+  {
+    id: 'launcherSynergy',
+    name: '射出斉射',
+    detail: '射出管 1 個につき投入速度 +3%',
+    cost: 3600,
     kind: 'unique',
   },
   {
@@ -259,8 +280,14 @@ export type MetaEffects = {
   autoBuyAll: boolean
   /** 毎秒の自動クリック回数 */
   autoClick: number
-  /** 給餌装置の数に応じて培養液生産が伸びる。建物数に依存するため tick 側で適用する */
+  /**
+   * 設備の所持数に応じて効果が伸びる強化。
+   * 所持数はラン中に変わるため、固定倍率とは別に tick 側で適用する。
+   */
+  tankSynergy: boolean
   feederSynergy: boolean
+  breederSynergy: boolean
+  launcherSynergy: boolean
 
   /** 最初のドラフトが早く訪れる */
   earlyDraft: boolean
@@ -303,7 +330,10 @@ export function metaEffects(m: MetaState): MetaEffects {
     autoBuyOne: has('autoBuyOne'),
     autoBuyAll: has('autoBuyAll'),
     autoClick: has('autoClick') ? 5 : 0,
+    tankSynergy: has('tankSynergy'),
     feederSynergy: has('feederSynergy'),
+    breederSynergy: has('breederSynergy'),
+    launcherSynergy: has('launcherSynergy'),
     earlyDraft: has('earlyDraft'),
     extraOffers: has('extraOffer') ? 1 : 0,
     rerolls: has('reroll') ? 1 : 0,
