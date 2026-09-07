@@ -82,7 +82,8 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     },
   },
   swarm: {
-    transform: { count: 3, scale: 0.62 },
+    // 「ダブル」なので 2 体。名前と見た目を一致させる
+    transform: { count: 2, scale: 0.74 },
   },
   giant: {
     transform: { scale: 1.5 },
@@ -319,9 +320,9 @@ export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
     count === 1
       ? [{ x: 0, y: 0, s: 1 }]
       : [
-          { x: 0.02, y: -0.16, s: 0.66 },
-          { x: 0.3, y: 0.1, s: 0.72 },
-          { x: 0.58, y: -0.04, s: 0.6 },
+          { x: -0.14, y: -0.13, s: 0.78 },
+          { x: 0.16, y: 0.12, s: 0.84 },
+          { x: 0.44, y: -0.03, s: 0.7 },
         ].slice(0, count)
 
   for (const p of placements) {

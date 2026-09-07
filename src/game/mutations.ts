@@ -62,30 +62,30 @@ export type MutationDef = {
  */
 export const MUTATIONS: MutationDef[] = [
   // --- 生体系（初期から出る） ---
-  { id: 'glow',       name: '発光',       prefix: 'ヒカリ',     bit: 0,  baseRate: 0.18, basePower: 5,   rarity: 'common',    family: 'bio' },
-  { id: 'frenzy',     name: '凶暴化',     prefix: '狂乱',       bit: 1,  baseRate: 0.15, basePower: 4,   rarity: 'common',    family: 'bio' },
-  { id: 'twinHead',   name: '双頭化',     prefix: '双頭',       bit: 2,  baseRate: 0.10, basePower: 8,   rarity: 'common',    family: 'bio' },
-  { id: 'swarm',      name: '群体化',     prefix: '群体',       bit: 3,  baseRate: 0.12, basePower: 6,   rarity: 'common',    family: 'bio' },
-  { id: 'giant',      name: '巨大化',     prefix: 'メガ',       bit: 4,  baseRate: 0.08, basePower: 25,  rarity: 'uncommon',  family: 'bio' },
-  { id: 'ancient',    name: '古代種',     prefix: '古代',       bit: 5,  baseRate: 0.06, basePower: 40,  rarity: 'uncommon',  family: 'bio' },
+  { id: 'glow',       name: '発光',       prefix: '発光',           bit: 0,  baseRate: 0.18, basePower: 5,   rarity: 'common',    family: 'bio' },
+  { id: 'frenzy',     name: '凶暴化',     prefix: '狂乱',           bit: 1,  baseRate: 0.15, basePower: 4,   rarity: 'common',    family: 'bio' },
+  { id: 'twinHead',   name: '双頭化',     prefix: 'デュアルヘッド', bit: 2,  baseRate: 0.10, basePower: 8,   rarity: 'common',    family: 'bio' },
+  { id: 'swarm',      name: 'ダブル',     prefix: 'ダブル',         bit: 3,  baseRate: 0.12, basePower: 6,   rarity: 'common',    family: 'bio' },
+  { id: 'giant',      name: '巨大化',     prefix: '巨大',           bit: 4,  baseRate: 0.08, basePower: 25,  rarity: 'uncommon',  family: 'bio' },
+  { id: 'ancient',    name: '超古代',     prefix: 'エンシェント',   bit: 5,  baseRate: 0.03, basePower: 420, rarity: 'legendary', family: 'bio' },
 
   // --- 深海系 ---
-  { id: 'pressure',   name: '高圧適応',   prefix: '深圧',       bit: 6,  baseRate: 0.09, basePower: 30,  rarity: 'uncommon',  family: 'abyss' },
-  { id: 'abyss',      name: '深淵種',     prefix: 'アビス',     bit: 7,  baseRate: 0.05, basePower: 90,  rarity: 'rare',      family: 'abyss' },
-  { id: 'tentacle',   name: '触手化',     prefix: 'タコ',       bit: 8,  baseRate: 0.05, basePower: 130, rarity: 'rare',      family: 'abyss' },
-  { id: 'eldritch',   name: '古代神性',   prefix: '邪神',       bit: 9,  baseRate: 0.03, basePower: 450, rarity: 'legendary', family: 'abyss' },
+  { id: 'pressure',   name: '高圧適応',   prefix: '深圧',           bit: 6,  baseRate: 0.09, basePower: 30,  rarity: 'uncommon',  family: 'abyss' },
+  { id: 'abyss',      name: '深淵種',     prefix: 'アビス',         bit: 7,  baseRate: 0.05, basePower: 90,  rarity: 'rare',      family: 'abyss' },
+  { id: 'tentacle',   name: '触手化',     prefix: 'タコ',           bit: 8,  baseRate: 0.05, basePower: 130, rarity: 'rare',      family: 'abyss' },
+  { id: 'eldritch',   name: '古代神性',   prefix: '邪神',           bit: 9,  baseRate: 0.03, basePower: 450, rarity: 'legendary', family: 'abyss' },
 
   // --- 機械系 ---
-  { id: 'armor',      name: '装甲化',     prefix: 'アーマー',   bit: 10, baseRate: 0.10, basePower: 18,  rarity: 'uncommon',  family: 'mech' },
-  { id: 'mecha',      name: '機械化',     prefix: 'メカ',       bit: 11, baseRate: 0.05, basePower: 60,  rarity: 'rare',      family: 'mech' },
-  { id: 'volt',       name: '帯電化',     prefix: 'サンダー',   bit: 12, baseRate: 0.05, basePower: 120, rarity: 'rare',      family: 'mech' },
-  { id: 'autonomous', name: '自律兵装',   prefix: 'オート',     bit: 13, baseRate: 0.03, basePower: 400, rarity: 'legendary', family: 'mech' },
+  { id: 'armor',      name: '装甲化',     prefix: 'アーマード',     bit: 10, baseRate: 0.10, basePower: 18,  rarity: 'uncommon',  family: 'mech' },
+  { id: 'mecha',      name: '機械化',     prefix: 'メカ',           bit: 11, baseRate: 0.05, basePower: 60,  rarity: 'rare',      family: 'mech' },
+  { id: 'volt',       name: '帯電化',     prefix: 'サンダー',       bit: 12, baseRate: 0.05, basePower: 120, rarity: 'rare',      family: 'mech' },
+  { id: 'autonomous', name: '機械兵装',   prefix: '機械兵装',       bit: 13, baseRate: 0.03, basePower: 400, rarity: 'legendary', family: 'mech' },
 
   // --- 宇宙系 ---
-  { id: 'zeroG',      name: '無重力',     prefix: 'ゼロG',      bit: 14, baseRate: 0.10, basePower: 20,  rarity: 'uncommon',  family: 'cosmic' },
-  { id: 'meteor',     name: '隕石化',     prefix: 'メテオ',     bit: 15, baseRate: 0.05, basePower: 100, rarity: 'rare',      family: 'cosmic' },
-  { id: 'cosmic',     name: '宇宙化',     prefix: 'コズミック', bit: 16, baseRate: 0.03, basePower: 350, rarity: 'legendary', family: 'cosmic' },
-  { id: 'alien',      name: 'エイリアン', prefix: 'エイリアン', bit: 17, baseRate: 0.03, basePower: 500, rarity: 'legendary', family: 'cosmic' },
+  { id: 'zeroG',      name: '飛行',       prefix: 'フライング',     bit: 14, baseRate: 0.10, basePower: 20,  rarity: 'uncommon',  family: 'cosmic' },
+  { id: 'meteor',     name: '隕石',       prefix: 'メテオ',         bit: 15, baseRate: 0.05, basePower: 100, rarity: 'rare',      family: 'cosmic' },
+  { id: 'cosmic',     name: '宇宙適応',   prefix: 'コズミック',     bit: 16, baseRate: 0.03, basePower: 350, rarity: 'legendary', family: 'cosmic' },
+  { id: 'alien',      name: 'エイリアン', prefix: 'エイリアン',     bit: 17, baseRate: 0.03, basePower: 500, rarity: 'legendary', family: 'cosmic' },
 ]
 
 if (MUTATIONS.length > MAX_MUTATIONS) {

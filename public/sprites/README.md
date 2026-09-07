@@ -24,29 +24,28 @@ part/head/twinHead.png       双頭化 — 2 つ目の頭
 part/body/mecha.png          機械化 — 胴の後ろ半分を機械に置換
 
 attach/frenzy.png            凶暴化 — 開いた口と牙
-attach/ancient.png           古代種 — 背の骨質の隆起
+attach/ancient.png           超古代 — 背の隆起（legendary なので見栄えを重めに）
 attach/eldritch.png          古代神性 — 体表に増えた眼
 attach/armor.png             装甲化 — 装甲板
-attach/autonomous.png        自律兵装 — 背の砲塔
+attach/autonomous.png        機械兵装 — 背の砲塔
 attach/alien.png             エイリアン — 触角と単眼
 
 overlay/glow.png             発光
 overlay/abyss.png            深淵種
 overlay/volt.png             帯電化 — 電撃
-overlay/meteor.png           隕石化 — 火の粉
-overlay/cosmic.png           宇宙化 — 星空
+overlay/meteor.png           隕石 — 火の粉
+overlay/cosmic.png           宇宙適応 — 星空
 ```
 
-**16 枚。** 変異は 18 種あるが、次の 6 種は画像が要らない
-（大きさ・色・体数を変えるだけで、絵そのものを持たないため）。
+**16 枚。** ファイル名は変異の内部 ID なので、表示名を変えてもファイル名は変わらない。
+
+次の 4 種は画像を持たない（大きさや色を変えるだけで、絵そのものが無いため）。
 
 ```
 巨大化      1.5 倍に拡大
-群体化      同じ絵を 3 匹に複製
+ダブル      同じ絵を 2 匹に複製
 高圧適応    1.12 倍 + 青灰に寄せる
-無重力      傾ける + 淡く寄せる
-凶暴化      赤に寄せる（牙だけ attach で描く）
-発光        縁取り（overlay で描く）
+飛行        傾ける + 淡く寄せる
 ```
 
 色の寄せ方（どの色に何 % 寄せるか）と拡大率は
