@@ -61,7 +61,7 @@ export function ResultOverlay() {
           <div className="panel-title">実験記録 — 生み出した検体</div>
           {species.map((sp) => (
             <div key={sp.mask} className="stack">
-              <SharkIcon mask={sp.mask} height={26} />
+              <SharkIcon mask={sp.mask} height={30} />
               <span className="stack-name">{nameOfMask(sp.mask)}</span>
               <span className="stack-count">{fmt(sp.count)}</span>
               <span className="stack-power">{fmt(sp.power)}</span>

@@ -52,7 +52,7 @@ export function StockPanel() {
         ) : (
           shown.map((st) => (
             <div key={st.mask} className="stack">
-              <SharkIcon mask={st.mask} height={22} />
+              <SharkIcon mask={st.mask} height={26} />
               <span className="stack-name">{nameOfMask(st.mask)}</span>
               <span className="stack-count">{fmt(st.count)}</span>
               <span className="stack-power">{fmt(st.power)}</span>

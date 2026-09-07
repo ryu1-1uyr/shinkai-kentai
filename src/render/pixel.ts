@@ -20,16 +20,20 @@ export const PALETTE = {
   accent: '#ffd479',
 }
 
-/** サメ 1 体を描く論理キャンバスの大きさ。装飾がはみ出せるよう本体より広く取る */
-export const FRAME_W = 64
-export const FRAME_H = 40
-/** 本体（48×24）の左上位置 */
-export const BODY_X = 8
-export const BODY_Y = 8
-export const BODY_W = 48
-export const BODY_H = 24
+/**
+ * サメ 1 体を描く論理キャンバスの大きさ。
+ * 本体は 96×44（base.png の解像度）で、棘・砲塔・オーラなどが
+ * はみ出せるよう四方に余白を取ってある。
+ */
+export const FRAME_W = 128
+export const FRAME_H = 72
+/** 本体（96×44）の左上位置 */
+export const BODY_X = 16
+export const BODY_Y = 14
+export const BODY_W = 96
+export const BODY_H = 44
 /** 体の中心線 */
-export const MID_Y = BODY_Y + 12
+export const MID_Y = BODY_Y + 22
 
 export function px(
   ctx: CanvasRenderingContext2D,
@@ -44,15 +48,18 @@ export function px(
 }
 
 /**
- * 体の縦半径。右（x が大きい方）が頭。
- * 一番太いのが後ろ寄り 44% の位置に来るようにしてサメらしい輪郭を作る。
+ * 体の縦半径（仮の絵を描くときの輪郭）。右（x が大きい方）が頭。
+ *
+ * base.png が読み込まれている場合は、そちらの実シルエットが優先される
+ * （silhouette.ts / bodyTop・bodyBottom を参照）。
+ * これは画像が無いときのフォールバック。
  */
-export function bodyHalf(i: number): number {
-  if (i < 4) return 0
-  const t = Math.min(1, (i - 4) / 43)
+export function fallbackHalf(i: number): number {
+  if (i < 8) return 0
+  const t = Math.min(1, (i - 8) / 86)
   const base = Math.sin(Math.PI * Math.pow(t, 0.85))
   const taper = t > 0.86 ? 1 - (t - 0.86) / 0.15 : 1
-  return Math.max(0, Math.round((1 + base * 8) * Math.max(0, taper)))
+  return Math.max(0, Math.round((2 + base * 15) * Math.max(0, taper)))
 }
 
 /** 体の輪郭を塗る。色を差し替えれば機械化などの部分置換に使える */
@@ -63,7 +70,7 @@ export function drawBody(
   const from = opts.from ?? 0
   const to = opts.to ?? BODY_W
   for (let i = from; i < to; i++) {
-    const h = bodyHalf(i)
+    const h = fallbackHalf(i)
     if (h <= 0) continue
     const x = BODY_X + i
     px(ctx, x, MID_Y - h, 1, h * 2, opts.body ?? PALETTE.body)
@@ -93,10 +100,10 @@ export function drawFin(
 /** 尾びれ（三日月） */
 export function drawTail(ctx: CanvasRenderingContext2D, color = PALETTE.fin): void {
   const x = BODY_X
-  for (let i = 0; i < 7; i++) {
-    const len = 3 + i * 1.4
-    px(ctx, x + i - 5, MID_Y - len, 1, len, color)
-    px(ctx, x + i - 5, MID_Y, 1, len * 0.75, color)
+  for (let i = 0; i < 12; i++) {
+    const len = 5 + i * 2.2
+    px(ctx, x + i - 10, MID_Y - len, 1, len, color)
+    px(ctx, x + i - 10, MID_Y, 1, len * 0.75, color)
   }
 }
 

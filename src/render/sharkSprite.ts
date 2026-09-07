@@ -1,10 +1,11 @@
 import type { MutationDef, MutationId, MutationMask } from '../game/mutations.ts'
-import { drawLayer, onAssetLoaded } from './assets.ts'
+import { asset, drawLayer, onAssetLoaded } from './assets.ts'
 import { hasMutation, MUTATIONS } from '../game/mutations.ts'
 import {
+  BODY_H,
   BODY_W,
   BODY_X,
-  bodyHalf,
+  BODY_Y,
   drawBody,
   drawFin,
   drawTail,
@@ -17,6 +18,7 @@ import {
   type RGB,
   tintBands,
 } from './pixel.ts'
+import { bodyBottom, bodyHalf, bodyMid, bodyTop, inBody, trunkTop } from './silhouette.ts'
 
 /**
  * 複合サメのスプライトを組み立てる。
@@ -50,10 +52,36 @@ export type Visual = {
 
 const RARITY_PRIORITY = { common: 1, uncommon: 2, rare: 3, legendary: 4 } as const
 
+/**
+ * base.png の頭の部分を切り出して、ずらした位置に貼る。
+ *
+ * 頭を手で描くとベースの絵柄と合わないが、**元の絵から切り出せば絵柄は構造的に一致する**。
+ * base.png を描き替えても追従する。画像がまだ無いときは何も描かない
+ * （仮の絵しか無い状態で四角い塊を出すより、頭が 1 つのままの方がマシなため）。
+ */
+const HEAD_FROM = 58
+const HEAD_W = BODY_W - HEAD_FROM
+
+function stampHead(ctx: Ctx, dx: number, dy: number): void {
+  const img = asset('base')
+  if (!img) return
+  ctx.drawImage(
+    img,
+    HEAD_FROM, 0, HEAD_W, BODY_H,
+    BODY_X + HEAD_FROM + dx, BODY_Y + dy, HEAD_W, BODY_H,
+  )
+}
+
 // ---------------------------------------------------------------------------
 // 変異ごとの見た目
 // ---------------------------------------------------------------------------
 
+/**
+ * 変異ごとの見た目。
+ *
+ * 位置は base.png の実シルエット（bodyTop / bodyBottom / trunkTop）を基準にしている。
+ * 式で決め打ちしていないので、**base.png を描き替えると装飾も追従する**。
+ */
 const VISUALS: Partial<Record<MutationId, Visual>> = {
   // --- 生体系 ---
   glow: {
@@ -62,22 +90,53 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   frenzy: {
     palette: { rgb: [210, 60, 50], amount: 0.42 },
     attach: (ctx) => {
-      // 開いた口と牙
-      px(ctx, BODY_X + 44, MID_Y + 1, 6, 1, PALETTE.mouth)
-      for (let i = 0; i < 3; i++) px(ctx, BODY_X + 45 + i * 2, MID_Y - 1, 1, 2, '#ffffff')
+      // 口元の牙
+      const y = bodyMid(84)
+      px(ctx, BODY_X + 78, y + 3, 16, 2, PALETTE.mouth)
+      for (let i = 0; i < 5; i++) px(ctx, BODY_X + 80 + i * 3, y + 1, 2, 3, '#ffffff')
+    },
+  },
+  swift: {
+    transform: { scale: 0.92 },
+    palette: { rgb: [150, 200, 230], amount: 0.25 },
+  },
+  albino: {
+    palette: { rgb: [244, 240, 236], amount: 0.72 },
+  },
+  spike: {
+    attach: (ctx) => {
+      // 背に並ぶ棘。胴の上端に沿わせる
+      for (let i = 0; i < 10; i++) {
+        const x = 22 + i * 6
+        if (!inBody(x)) continue
+        drawFin(ctx, BODY_X + x, trunkTop(x) + 1, 4, 6, -1, '#e8e2d4')
+      }
+    },
+  },
+  poison: {
+    palette: { rgb: [110, 190, 90], amount: 0.5 },
+    overlay: (ctx) => {
+      for (let i = 0; i < 14; i++) {
+        const x = 10 + ((i * 23) % 80)
+        if (!inBody(x)) continue
+        const y = bodyTop(x) + ((i * 13) % Math.max(2, bodyBottom(x) - bodyTop(x)))
+        px(ctx, BODY_X + x, y, 3, 3, '#c8ff7a')
+      }
     },
   },
   twinHead: {
     part: {
       slot: 'head',
+      // 元の絵から頭を切り出して、上にずらして貼る
+      draw: (ctx) => stampHead(ctx, 3, -13),
+    },
+  },
+  tripleHead: {
+    part: {
+      slot: 'head',
       draw: (ctx) => {
-        // 頭をもう 1 つ、少し上にずらして生やす
-        for (let i = 30; i < BODY_W; i++) {
-          const h = Math.round(bodyHalf(i) * 0.72)
-          if (h <= 0) continue
-          px(ctx, BODY_X + i + 2, MID_Y - 9 - h, 1, h * 2, PALETTE.body)
-        }
-        px(ctx, BODY_X + 42, MID_Y - 12, 2, 2, PALETTE.eye)
+        stampHead(ctx, 3, -15)
+        stampHead(ctx, 3, 15)
       },
     },
   },
@@ -88,62 +147,23 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   triple: {
     transform: { count: 3, scale: 0.66 },
   },
-  swift: {
-    // 細長い体型にする
-    transform: { scale: 0.92 },
-    palette: { rgb: [150, 200, 230], amount: 0.25 },
-  },
-  albino: {
-    palette: { rgb: [244, 240, 236], amount: 0.72 },
-  },
-  spike: {
-    attach: (ctx) => {
-      // 背に並ぶ棘
-      for (let i = 0; i < 8; i++) {
-        const x = 12 + i * 4
-        const h = bodyHalf(x)
-        drawFin(ctx, BODY_X + x, MID_Y - h, 3, 4, -1, '#e8e2d4')
-      }
-    },
-  },
-  poison: {
-    palette: { rgb: [110, 190, 90], amount: 0.5 },
-    overlay: (ctx) => {
-      for (let i = 0; i < 10; i++) {
-        px(ctx, BODY_X + 4 + ((i * 13) % 40), MID_Y - 10 + ((i * 7) % 20), 2, 2, '#c8ff7a')
-      }
-    },
-  },
-  tripleHead: {
-    part: {
-      slot: 'head',
-      draw: (ctx) => {
-        // 頭を上下に 2 つ足して 3 つにする
-        for (const dy of [-10, 10]) {
-          for (let i = 30; i < BODY_W; i++) {
-            const h = Math.round(bodyHalf(i) * 0.66)
-            if (h <= 0) continue
-            px(ctx, BODY_X + i + 2, MID_Y + dy - h, 1, h * 2, PALETTE.body)
-          }
-          px(ctx, BODY_X + 42, MID_Y + dy - 3, 2, 2, PALETTE.eye)
-        }
-      },
-    },
+  giant: {
+    transform: { scale: 1.5 },
   },
   fungus: {
     palette: { rgb: [180, 150, 120], amount: 0.3 },
     attach: (ctx) => {
       // 背から生えたキノコ
-      for (const [x, sz] of [[16, 5], [24, 7], [33, 4]] as const) {
-        const top = MID_Y - bodyHalf(x)
-        px(ctx, BODY_X + x + 1, top - sz, 2, sz, '#e8dcc8')
-        px(ctx, BODY_X + x - 1, top - sz - 3, sz + 2, 3, '#d4534a')
-        px(ctx, BODY_X + x, top - sz - 2, 1, 1, '#f6e0d8')
+      for (const [x, sz] of [[30, 7], [46, 10], [62, 6]] as const) {
+        const top = trunkTop(x)
+        px(ctx, BODY_X + x + 2, top - sz, 3, sz, '#e8dcc8')
+        px(ctx, BODY_X + x - 2, top - sz - 4, sz + 4, 4, '#d4534a')
+        px(ctx, BODY_X + x, top - sz - 3, 2, 1, '#f6e0d8')
       }
     },
   },
   ghost: {
-    // 半透明にする。絵は増やさず alpha だけで表現できる
+    // 半透明にする。絵を増やさず alpha だけで表現できる
     transform: { alpha: 0.45 },
     palette: { rgb: [190, 215, 255], amount: 0.5 },
     overlay: (ctx) => outline(ctx, FRAME_W, FRAME_H, [200, 230, 255], 0.4),
@@ -152,67 +172,22 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     palette: { rgb: [120, 140, 95], amount: 0.55 },
     attach: (ctx) => {
       // 欠けた体と剥き出しの骨
-      for (const [x, y, w] of [[14, -3, 4], [22, 2, 3], [30, -5, 3]] as const) {
-        px(ctx, BODY_X + x, MID_Y + y, w, 3, '#2a2f22')
-        px(ctx, BODY_X + x, MID_Y + y + 1, w, 1, '#ddd6c0')
+      for (const [x, w] of [[26, 7], [44, 6], [60, 6]] as const) {
+        if (!inBody(x)) continue
+        const y = bodyMid(x)
+        px(ctx, BODY_X + x, y - 2, w, 5, '#2a2f22')
+        px(ctx, BODY_X + x, y, w, 1, '#ddd6c0')
       }
     },
-  },
-
-  // --- 災害系 ---
-  tornado: {
-    transform: { tilt: 0.34 },
-    overlay: (ctx) => {
-      // 巻き上がる渦
-      for (let i = 0; i < 14; i++) {
-        const y = MID_Y - 14 + i * 2
-        const w = 3 + Math.abs(Math.sin(i * 0.8)) * 12
-        px(ctx, BODY_X + 20 - w / 2, y, w, 1, i % 2 ? '#b9d8e8' : '#7fa8c4')
-      }
-    },
-  },
-  magma: {
-    palette: { rgb: [220, 90, 30], amount: 0.55 },
-  },
-  frozen: {
-    palette: { rgb: [190, 230, 255], amount: 0.5 },
-    attach: (ctx) => {
-      // 体を覆う氷塊
-      for (const [x, y] of [[14, -6], [22, 4], [30, -4], [38, 2]] as const) {
-        px(ctx, BODY_X + x, MID_Y + y, 5, 5, '#dff2ff')
-        px(ctx, BODY_X + x + 1, MID_Y + y + 1, 2, 2, '#ffffff')
-      }
-    },
-  },
-  storm: {
-    overlay: (ctx) => {
-      // 吹き付ける風の筋
-      for (let i = 0; i < 9; i++) {
-        const y = MID_Y - 14 + i * 3.4
-        px(ctx, BODY_X - 6 + ((i * 5) % 10), y, 14 + (i % 3) * 6, 1, '#cfe3f0')
-      }
-    },
-  },
-  tsunami: {
-    transform: { scale: 1.35 },
-    overlay: (ctx) => {
-      // 巻き込む水しぶき
-      for (let i = 0; i < 22; i++) {
-        const x = BODY_X - 4 + i * 3
-        const y = MID_Y + Math.round(Math.sin(i * 0.55) * 11)
-        px(ctx, x, y, 2, 2, i % 3 ? '#7fd4ff' : '#ffffff')
-      }
-    },
-  },
-  giant: {
-    transform: { scale: 1.5 },
   },
   ancient: {
     palette: { rgb: [150, 128, 84], amount: 0.45 },
     attach: (ctx) => {
-      // 背に骨質の隆起
-      for (let i = 0; i < 5; i++) {
-        px(ctx, BODY_X + 16 + i * 5, MID_Y - bodyHalf(16 + i * 5) - 2, 2, 3, '#e6dcc0')
+      // 背の骨質の隆起
+      for (let i = 0; i < 7; i++) {
+        const x = 24 + i * 8
+        if (!inBody(x)) continue
+        px(ctx, BODY_X + x, trunkTop(x) - 3, 3, 5, '#e6dcc0')
       }
     },
   },
@@ -231,11 +206,11 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
       slot: 'tail',
       draw: (ctx) => {
         // 尾びれをタコ足に置き換える
-        for (let t = 0; t < 4; t++) {
-          const baseY = MID_Y - 6 + t * 4
-          for (let i = 0; i < 12; i++) {
-            const wob = Math.round(Math.sin(i * 0.7 + t * 1.9) * 2)
-            px(ctx, BODY_X + 2 - i, baseY + wob, 1, 2, t % 2 ? '#8c5a86' : '#a06898')
+        for (let t = 0; t < 5; t++) {
+          const baseY = MID_Y - 12 + t * 6
+          for (let i = 0; i < 22; i++) {
+            const wob = Math.round(Math.sin(i * 0.45 + t * 1.9) * 4)
+            px(ctx, BODY_X + 4 - i, baseY + wob, 2, 3, t % 2 ? '#8c5a86' : '#a06898')
           }
         }
       },
@@ -245,9 +220,11 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     palette: { rgb: [90, 40, 110], amount: 0.35 },
     attach: (ctx) => {
       // 体表に増えた眼
-      for (const [x, y] of [[20, -4], [26, 2], [32, -6], [36, 3], [24, -8]] as const) {
-        px(ctx, BODY_X + x, MID_Y + y, 3, 3, '#ffe98a')
-        px(ctx, BODY_X + x + 1, MID_Y + y + 1, 1, 1, '#1a0f24')
+      for (const [x, f] of [[34, 0.3], [46, 0.6], [56, 0.25], [64, 0.7], [42, 0.45]] as const) {
+        if (!inBody(x)) continue
+        const y = bodyTop(x) + (bodyBottom(x) - bodyTop(x)) * f
+        px(ctx, BODY_X + x, y, 4, 4, '#ffe98a')
+        px(ctx, BODY_X + x + 1, y + 1, 2, 2, '#1a0f24')
       }
     },
   },
@@ -255,10 +232,12 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   // --- 機械系 ---
   armor: {
     attach: (ctx) => {
-      for (let i = 12; i < 40; i += 6) {
-        const h = bodyHalf(i)
-        px(ctx, BODY_X + i, MID_Y - h, 4, h * 2, PALETTE.metal)
-        px(ctx, BODY_X + i, MID_Y - h, 4, 1, PALETTE.metalDark)
+      for (let x = 24; x < 76; x += 11) {
+        if (!inBody(x)) continue
+        const t = bodyTop(x)
+        const h = bodyBottom(x) - t
+        px(ctx, BODY_X + x, t, 6, h, PALETTE.metal)
+        px(ctx, BODY_X + x, t, 6, 2, PALETTE.metalDark)
       }
     },
   },
@@ -267,33 +246,39 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
       slot: 'body',
       draw: (ctx) => {
         // 胴の後ろ半分を機械に置換
-        drawBody(ctx, { from: 0, to: 26, body: PALETTE.metal, belly: '#cdd4da' })
-        for (let i = 6; i < 26; i += 5) px(ctx, BODY_X + i, MID_Y - bodyHalf(i), 1, bodyHalf(i) * 2, PALETTE.metalDark)
-        px(ctx, BODY_X + 10, MID_Y - 2, 4, 4, '#ff6a4d')
+        for (let i = 0; i < 48; i++) {
+          if (!inBody(i)) continue
+          const t = bodyTop(i)
+          px(ctx, BODY_X + i, t, 1, bodyBottom(i) - t, PALETTE.metal)
+        }
+        for (let i = 6; i < 48; i += 9) {
+          if (!inBody(i)) continue
+          px(ctx, BODY_X + i, bodyTop(i), 1, bodyBottom(i) - bodyTop(i), PALETTE.metalDark)
+        }
+        px(ctx, BODY_X + 22, bodyMid(22) - 3, 6, 6, '#ff6a4d')
       },
     },
   },
   volt: {
     overlay: (ctx) => {
-      ctx.globalAlpha = 0.95
-      for (let s = 0; s < 3; s++) {
-        let x = BODY_X + 10 + s * 12
-        let y = MID_Y - 12 + s * 3
-        for (let i = 0; i < 7; i++) {
-          px(ctx, x, y, 2, 1, '#8ff0ff')
-          x += i % 2 ? 2 : -1
-          y += 2
+      for (let s2 = 0; s2 < 4; s2++) {
+        let x = BODY_X + 16 + s2 * 22
+        let y = MID_Y - 24 + s2 * 4
+        for (let i = 0; i < 9; i++) {
+          px(ctx, x, y, 3, 2, '#8ff0ff')
+          x += i % 2 ? 3 : -2
+          y += 4
         }
       }
-      ctx.globalAlpha = 1
     },
   },
   autonomous: {
     attach: (ctx) => {
-      // 背に砲塔
-      px(ctx, BODY_X + 24, MID_Y - bodyHalf(24) - 5, 8, 5, PALETTE.metal)
-      px(ctx, BODY_X + 30, MID_Y - bodyHalf(24) - 4, 7, 2, PALETTE.metalDark)
-      px(ctx, BODY_X + 26, MID_Y - bodyHalf(24) - 7, 2, 2, '#ff4d4d')
+      // 背の砲塔
+      const top = trunkTop(48)
+      px(ctx, BODY_X + 42, top - 9, 15, 9, PALETTE.metal)
+      px(ctx, BODY_X + 55, top - 7, 13, 3, PALETTE.metalDark)
+      px(ctx, BODY_X + 46, top - 13, 4, 4, '#ff4d4d')
     },
   },
 
@@ -305,11 +290,11 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   meteor: {
     overlay: (ctx) => {
       // 尾を引く火の粉
-      for (let i = 0; i < 18; i++) {
-        const x = BODY_X - 2 - i
-        const y = MID_Y + Math.round(Math.sin(i * 0.9) * 3)
-        const c = i < 6 ? '#fff2a0' : i < 12 ? '#ff9d3c' : '#d94a2a'
-        px(ctx, x, y, 2, 2, c)
+      for (let i = 0; i < 30; i++) {
+        const x = BODY_X - 4 - i * 2
+        const y = MID_Y + Math.round(Math.sin(i * 0.55) * 6)
+        const c = i < 10 ? '#fff2a0' : i < 20 ? '#ff9d3c' : '#d94a2a'
+        px(ctx, x, y, 3, 3, c)
       }
     },
   },
@@ -317,10 +302,11 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     palette: { rgb: [24, 16, 52], amount: 0.6 },
     overlay: (ctx) => {
       // 体表に星空
-      for (let i = 0; i < 26; i++) {
-        const gx = BODY_X + 6 + ((i * 17) % 40)
-        const gy = MID_Y - 8 + ((i * 11) % 16)
-        px(ctx, gx, gy, 1, 1, i % 4 ? '#ffffff' : '#9fd0ff')
+      for (let i = 0; i < 44; i++) {
+        const x = 6 + ((i * 17) % 86)
+        if (!inBody(x)) continue
+        const y = bodyTop(x) + ((i * 11) % Math.max(2, bodyBottom(x) - bodyTop(x)))
+        px(ctx, BODY_X + x, y, 1, 1, i % 4 ? '#ffffff' : '#9fd0ff')
       }
     },
   },
@@ -328,10 +314,59 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     palette: { rgb: [80, 230, 120], amount: 0.5 },
     attach: (ctx) => {
       // 触角と大きい単眼
-      px(ctx, BODY_X + 40, MID_Y - bodyHalf(40) - 6, 1, 6, '#c8ffd8')
-      px(ctx, BODY_X + 39, MID_Y - bodyHalf(40) - 8, 3, 3, '#e8ff6a')
-      px(ctx, BODY_X + 41, MID_Y - 3, 5, 5, '#111820')
-      px(ctx, BODY_X + 42, MID_Y - 2, 2, 2, '#c8ff6a')
+      const top = trunkTop(78)
+      px(ctx, BODY_X + 80, top - 11, 2, 11, '#c8ffd8')
+      px(ctx, BODY_X + 78, top - 15, 5, 5, '#e8ff6a')
+      px(ctx, BODY_X + 80, bodyMid(80) - 4, 8, 8, '#111820')
+      px(ctx, BODY_X + 82, bodyMid(80) - 2, 3, 3, '#c8ff6a')
+    },
+  },
+
+  // --- 災害系 ---
+  tornado: {
+    transform: { tilt: 0.34 },
+    overlay: (ctx) => {
+      // 巻き上がる渦
+      for (let i = 0; i < 22; i++) {
+        const y = MID_Y - 28 + i * 3
+        const w = 5 + Math.abs(Math.sin(i * 0.6)) * 26
+        px(ctx, BODY_X + 40 - w / 2, y, w, 1, i % 2 ? '#b9d8e8' : '#7fa8c4')
+      }
+    },
+  },
+  magma: {
+    palette: { rgb: [220, 90, 30], amount: 0.55 },
+  },
+  frozen: {
+    palette: { rgb: [190, 230, 255], amount: 0.5 },
+    attach: (ctx) => {
+      // 体を覆う氷塊
+      for (const [x, f] of [[26, 0.2], [42, 0.7], [58, 0.3], [72, 0.6]] as const) {
+        if (!inBody(x)) continue
+        const y = bodyTop(x) + (bodyBottom(x) - bodyTop(x)) * f
+        px(ctx, BODY_X + x, y, 8, 8, '#dff2ff')
+        px(ctx, BODY_X + x + 2, y + 2, 3, 3, '#ffffff')
+      }
+    },
+  },
+  storm: {
+    overlay: (ctx) => {
+      // 吹き付ける風の筋
+      for (let i = 0; i < 12; i++) {
+        const y = MID_Y - 26 + i * 4.6
+        px(ctx, BODY_X - 10 + ((i * 7) % 16), y, 26 + (i % 3) * 12, 1, '#cfe3f0')
+      }
+    },
+  },
+  tsunami: {
+    transform: { scale: 1.35 },
+    overlay: (ctx) => {
+      // 巻き込む水しぶき
+      for (let i = 0; i < 34; i++) {
+        const x = BODY_X - 8 + i * 4
+        const y = MID_Y + Math.round(Math.sin(i * 0.45) * 20)
+        px(ctx, x, y, 3, 3, i % 3 ? '#7fd4ff' : '#ffffff')
+      }
     },
   },
 }
@@ -369,10 +404,10 @@ function drawOne(
   // 胴とヒレ
   drawLayer(g, 'base', (c) => {
     drawBody(c)
-    drawFin(c, BODY_X + 18, MID_Y - bodyHalf(18), 9, 7, -1)
-    drawFin(c, BODY_X + 30, MID_Y + bodyHalf(30) - 1, 7, 5, 1)
-    px(c, BODY_X + 41, MID_Y - 3, 2, 2, PALETTE.eye)
-    px(c, BODY_X + 43, MID_Y + 2, 5, 1, PALETTE.mouth)
+    drawFin(c, BODY_X + 36, MID_Y - bodyHalf(36), 18, 14, -1)
+    drawFin(c, BODY_X + 60, MID_Y + bodyHalf(60) - 2, 14, 10, 1)
+    px(c, BODY_X + 82, MID_Y - 6, 4, 4, PALETTE.eye)
+    px(c, BODY_X + 86, MID_Y + 4, 10, 2, PALETTE.mouth)
   })
 
   if (body) drawLayer(g, `part/body/${body.id}`, body.part.draw)

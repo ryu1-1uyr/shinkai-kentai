@@ -191,7 +191,7 @@ export function InvasionViewer() {
       ctx.drawImage(bImg, w - bSize - 14, ground - bSize, bSize, bSize)
 
       // サメ
-      const sH = 18
+      const sH = 20
       for (const p of parts) {
         const img = sharkSprite(p.mask, 1)
         const w = (img.width / img.height) * sH

@@ -40,7 +40,7 @@ export function DraftOverlay() {
             const next = cur + 1
             return (
               <button key={m.id} className="card" data-rarity={m.rarity} onClick={() => chooseDraft(i)}>
-                <SharkIcon mask={maskOf(m)} height={34} />
+                <SharkIcon mask={maskOf(m)} height={40} />
                 <span className="card-rarity">{RARITY_LABEL[m.rarity]}</span>
                 <span className="card-name">{m.name}</span>
                 <span className="card-effect">

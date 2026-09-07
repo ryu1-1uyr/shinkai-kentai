@@ -418,7 +418,7 @@
 .slab-head .btn { margin-left: auto; }
 .slab-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: var(--sp-2);
 }
 .slab-cell {
@@ -428,7 +428,7 @@
   border-radius: var(--r-1);
   padding: var(--sp-2);
 }
-.slab-cell canvas { image-rendering: pixelated; }
+.slab-cell canvas { image-rendering: pixelated; max-width: 100%; height: auto; }
 .slab-cell span { color: var(--c-text-dim); font-size: var(--fs-xs); text-align: center; }
 
 .shark-icon { image-rendering: pixelated; flex: 0 0 auto; }

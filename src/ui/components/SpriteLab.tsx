@@ -4,7 +4,7 @@ import { sharkSprite } from '../../render/sharkSprite.ts'
 import { useAssetVersion } from '../useAssetVersion.ts'
 
 /** 合成スプライトの確認用。開発時のみ使う */
-function Cell({ mask, label, scale = 2 }: { mask: number; label: string; scale?: number }) {
+function Cell({ mask, label, scale = 1 }: { mask: number; label: string; scale?: number }) {
   const ref = useRef<HTMLCanvasElement>(null)
   const assetVersion = useAssetVersion()
   useEffect(() => {
@@ -66,7 +66,7 @@ export function SpriteLab({ onClose }: { onClose: () => void }) {
         <div className="panel-title">組み合わせ</div>
         <div className="slab-grid">
           {COMBOS.map(([mask, label]) => (
-            <Cell key={label} mask={mask} label={label} scale={2} />
+            <Cell key={label} mask={mask} label={label} />
           ))}
         </div>
 
