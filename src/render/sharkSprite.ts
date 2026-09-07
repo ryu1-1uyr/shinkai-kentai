@@ -1,4 +1,5 @@
 import type { MutationDef, MutationId, MutationMask } from '../game/mutations.ts'
+import { drawLayer, onAssetLoaded } from './assets.ts'
 import { MUTATIONS } from '../game/mutations.ts'
 import {
   BODY_W,
@@ -228,28 +229,35 @@ function newCanvas(w: number, h: number): { c: HTMLCanvasElement; g: Ctx } {
   return { c, g }
 }
 
-/** ベースのサメ 1 体ぶん（部位の置換を反映して）を 1 枚に描く */
-function drawOne(g: Ctx, parts: Map<PartSlot, Visual['part']>, attaches: Array<(c: Ctx) => void>): void {
+/**
+ * ベースのサメ 1 体ぶん（部位の置換を反映して）を 1 枚に描く。
+ * 各レイヤーは public/sprites/ に同名の PNG を置けば差し替わる。
+ */
+function drawOne(
+  g: Ctx,
+  parts: Map<PartSlot, { id: MutationId; part: NonNullable<Visual['part']> }>,
+  attaches: Array<{ id: MutationId; draw: (c: Ctx) => void }>,
+): void {
   const tail = parts.get('tail')
   const body = parts.get('body')
   const head = parts.get('head')
 
-  if (tail) tail.draw(g)
-  else drawTail(g)
+  // 尾（置換されていなければ既定の尾びれ）
+  if (tail) drawLayer(g, `part/tail/${tail.id}`, tail.part.draw)
+  else drawLayer(g, 'part/tail/default', drawTail)
 
-  drawBody(g)
-  if (body) body.draw(g)
+  // 胴とヒレ
+  drawLayer(g, 'base', (c) => {
+    drawBody(c)
+    drawFin(c, BODY_X + 18, MID_Y - bodyHalf(18), 9, 7, -1)
+    drawFin(c, BODY_X + 30, MID_Y + bodyHalf(30) - 1, 7, 5, 1)
+    px(c, BODY_X + 41, MID_Y - 3, 2, 2, PALETTE.eye)
+    px(c, BODY_X + 43, MID_Y + 2, 5, 1, PALETTE.mouth)
+  })
 
-  // 背びれ・胸びれ
-  drawFin(g, BODY_X + 18, MID_Y - bodyHalf(18), 9, 7, -1)
-  drawFin(g, BODY_X + 30, MID_Y + bodyHalf(30) - 1, 7, 5, 1)
-
-  // 目と口
-  px(g, BODY_X + 41, MID_Y - 3, 2, 2, PALETTE.eye)
-  px(g, BODY_X + 43, MID_Y + 2, 5, 1, PALETTE.mouth)
-
-  if (head) head.draw(g)
-  for (const a of attaches) a(g)
+  if (body) drawLayer(g, `part/body/${body.id}`, body.part.draw)
+  if (head) drawLayer(g, `part/head/${head.id}`, head.part.draw)
+  for (const a of attaches) drawLayer(g, `attach/${a.id}`, a.draw)
 }
 
 const cache = new Map<string, HTMLCanvasElement>()
@@ -266,11 +274,11 @@ export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
   const defs: MutationDef[] = MUTATIONS.filter((m) => mask & (1 << m.bit))
 
   // --- チャンネルごとに集約 ---
-  const parts = new Map<PartSlot, Visual['part']>()
+  const parts = new Map<PartSlot, { id: MutationId; part: NonNullable<Visual['part']> }>()
   const partPriority = new Map<PartSlot, number>()
-  const attaches: Array<(c: Ctx) => void> = []
+  const attaches: Array<{ id: MutationId; draw: (c: Ctx) => void }> = []
   const palettes: Array<{ rgb: RGB; amount: number }> = []
-  const overlays: Array<(c: Ctx) => void> = []
+  const overlays: Array<{ id: MutationId; draw: (c: Ctx) => void }> = []
   let scaleMult = 1
   let count = 1
   let tilt = 0
@@ -282,13 +290,13 @@ export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
       // 同じスロットを取り合ったらレア度が高い方が勝つ
       const p = RARITY_PRIORITY[d.rarity]
       if ((partPriority.get(v.part.slot) ?? -1) < p) {
-        parts.set(v.part.slot, v.part)
+        parts.set(v.part.slot, { id: d.id, part: v.part })
         partPriority.set(v.part.slot, p)
       }
     }
-    if (v.attach) attaches.push(v.attach)
+    if (v.attach) attaches.push({ id: d.id, draw: v.attach })
     if (v.palette) palettes.push(v.palette)
-    if (v.overlay) overlays.push(v.overlay)
+    if (v.overlay) overlays.push({ id: d.id, draw: v.overlay })
     if (v.transform) {
       if (v.transform.scale) scaleMult *= v.transform.scale
       if (v.transform.count) count = Math.max(count, v.transform.count)
@@ -300,7 +308,7 @@ export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
   const { c: unit, g: ug } = newCanvas(FRAME_W, FRAME_H)
   drawOne(ug, parts, attaches)
   for (const p of palettes) tint(ug, FRAME_W, FRAME_H, p.rgb, p.amount)
-  for (const o of overlays) o(ug)
+  for (const o of overlays) drawLayer(ug, `overlay/${o.id}`, o.draw)
 
   // --- 変形を適用して最終キャンバスへ ---
   const outW = Math.ceil(FRAME_W * scaleMult * scale)
@@ -334,3 +342,6 @@ export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
 export function sharkDataUrl(mask: MutationMask, scale = 2): string {
   return sharkSprite(mask, scale).toDataURL()
 }
+
+// 画像が後から読み込まれたら、合成済みのキャッシュを捨てて描き直させる
+onAssetLoaded(() => cache.clear())

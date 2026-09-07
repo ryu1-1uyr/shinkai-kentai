@@ -15,7 +15,21 @@
   color: var(--c-text-mute);
   text-transform: uppercase;
 }
+/*
+ * スクロールするパネル。
+ * flex の中で高さを縛らないと中身のぶんだけ伸びて隣のパネルを押し出すため、
+ * 残りの高さを受け取って自分の中でスクロールさせる。
+ */
 .scroll { overflow-y: auto; min-height: 0; }
+/* 1 カラムに落ちたときは高さの基準が無いので、上限だけ設けて自然に伸ばす */
+.col > .panel.scroll { max-height: 52vh; }
+
+/* 3 カラムのときは列の高さが決まっているので、残りを受け取って中でスクロールさせる。
+ * これを付けないと中身のぶんだけ伸びて隣のパネルを押し出す。 */
+@media (min-width: 1001px) {
+  .col > .panel.scroll { flex: 1 1 0; min-height: 0; max-height: none; }
+  .col > .panel:not(.scroll) { flex: 0 0 auto; }
+}
 
 /* ---- スプライト（ガワ差し替え点） ----
  * 画像を当てるときは data-sprite セレクタに background-image を指定し、

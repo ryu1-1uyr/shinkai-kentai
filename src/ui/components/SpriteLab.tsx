@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { MUTATIONS, nameOfMask } from '../../game/mutations.ts'
 import { sharkSprite } from '../../render/sharkSprite.ts'
+import { useAssetVersion } from '../useAssetVersion.ts'
 
 /** 合成スプライトの確認用。開発時のみ使う */
 function Cell({ mask, label, scale = 2 }: { mask: number; label: string; scale?: number }) {
   const ref = useRef<HTMLCanvasElement>(null)
+  const assetVersion = useAssetVersion()
   useEffect(() => {
     const c = ref.current
     if (!c) return
@@ -15,7 +17,7 @@ function Cell({ mask, label, scale = 2 }: { mask: number; label: string; scale?:
     g.imageSmoothingEnabled = false
     g.clearRect(0, 0, c.width, c.height)
     g.drawImage(sprite, 0, 0, c.width, c.height)
-  }, [mask, scale])
+  }, [mask, scale, assetVersion])
   return (
     <div className="slab-cell">
       <canvas ref={ref} />
