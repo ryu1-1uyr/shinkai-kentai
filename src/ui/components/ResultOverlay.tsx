@@ -1,8 +1,9 @@
-import { MUTATIONS, nameOfMask, powerOfMask } from '../../game/mutations.ts'
+import { nameOfMask, powerOfMask } from '../../game/mutations.ts'
 import { depthName } from '../../game/targets.ts'
 import { getConfig, getLastAward, setScreen } from '../../store/gameStore.ts'
 import { fmt, mmss } from '../format.ts'
 import { useGame } from '../useGame.ts'
+import { SharkIcon } from './SharkIcon.tsx'
 import { Sprite } from './Sprite.tsx'
 
 export function ResultOverlay() {
@@ -60,7 +61,7 @@ export function ResultOverlay() {
           <div className="panel-title">実験記録 — 生み出した検体</div>
           {species.map((sp) => (
             <div key={sp.mask} className="stack">
-              <Sprite kind="mutation" id={topId(sp.mask)} />
+              <SharkIcon mask={sp.mask} height={26} />
               <span className="stack-name">{nameOfMask(sp.mask)}</span>
               <span className="stack-count">{fmt(sp.count)}</span>
               <span className="stack-power">{fmt(sp.power)}</span>
@@ -74,9 +75,4 @@ export function ResultOverlay() {
       </div>
     </div>
   )
-}
-
-function topId(mask: number): string {
-  const owned = MUTATIONS.filter((m) => mask & (1 << m.bit))
-  return owned.length ? owned[owned.length - 1].id : 'twinHead'
 }

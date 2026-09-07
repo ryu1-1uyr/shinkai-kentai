@@ -1,8 +1,9 @@
 import { sortedByPower } from '../../game/inventory.ts'
-import { MUTATION_BY_ID, MUTATIONS, nameOfMask, rateAt } from '../../game/mutations.ts'
+import { MUTATIONS, nameOfMask, rateAt } from '../../game/mutations.ts'
 import { getConfig } from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
+import { SharkIcon } from './SharkIcon.tsx'
 import { Sprite } from './Sprite.tsx'
 
 const VISIBLE = 10
@@ -51,7 +52,7 @@ export function StockPanel() {
         ) : (
           shown.map((st) => (
             <div key={st.mask} className="stack">
-              <Sprite kind="mutation" id={topMutationId(st.mask)} />
+              <SharkIcon mask={st.mask} height={22} />
               <span className="stack-name">{nameOfMask(st.mask)}</span>
               <span className="stack-count">{fmt(st.count)}</span>
               <span className="stack-power">{fmt(st.power)}</span>
@@ -67,11 +68,4 @@ export function StockPanel() {
       </div>
     </div>
   )
-}
-
-/** スタックの代表アイコン。最も珍しい（＝最後のビットの）変異を使う */
-function topMutationId(mask: number): string {
-  const owned = MUTATIONS.filter((m) => mask & (1 << m.bit))
-  if (owned.length === 0) return 'twinHead'
-  return (MUTATION_BY_ID.get(owned[owned.length - 1].id) ?? owned[0]).id
 }

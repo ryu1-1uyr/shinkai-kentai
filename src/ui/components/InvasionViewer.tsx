@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { sortedByPower } from '../../game/inventory.ts'
-import { MUTATIONS } from '../../game/mutations.ts'
 import { launchRate } from '../../game/tick.ts'
+import { sharkSprite } from '../../render/sharkSprite.ts'
 import { getConfig, getSpeed, getState } from '../../store/gameStore.ts'
 
 /**
@@ -33,21 +33,17 @@ type P = {
   vrot: number
   alpha: number
   bounced: boolean
-  key: string
+  mask: number
 }
 
-/** 絵文字をオフスクリーンに焼いて使い回す。ドット絵になったらここを差し替える */
-const SPRITE_SOURCE: Record<string, string> = {
+/**
+ * 建物は当面フォールバックの絵文字を焼いて使う。
+ * サメ側は sharkSprite が合成済みのスプライトを返すのでそのまま drawImage する。
+ */
+const TARGET_GLYPH: Record<string, string> = {
   'target:normal': '🏢',
   'target:boss': '🏛',
 }
-for (const m of MUTATIONS) SPRITE_SOURCE[`mutation:${m.id}`] = '🦈'
-SPRITE_SOURCE['mutation:mecha'] = '🤖'
-SPRITE_SOURCE['mutation:alien'] = '👽'
-SPRITE_SOURCE['mutation:cosmic'] = '🌌'
-SPRITE_SOURCE['mutation:ancient'] = '🦕'
-SPRITE_SOURCE['mutation:giant'] = '🐋'
-SPRITE_SOURCE['mutation:swarm'] = '🐟'
 
 const cache = new Map<string, HTMLCanvasElement>()
 
@@ -62,19 +58,16 @@ function sprite(key: string, size: number): HTMLCanvasElement {
   g.font = `${Math.floor(size * 0.82)}px serif`
   g.textAlign = 'center'
   g.textBaseline = 'middle'
-  g.fillText(SPRITE_SOURCE[key] ?? '🦈', size / 2, size / 2 + 1)
+  g.fillText(TARGET_GLYPH[key] ?? '🏢', size / 2, size / 2 + 1)
   cache.set(id, c)
   return c
 }
 
-/** いま出撃しているのは最も弱い個体なので、その見た目を使う */
-function launchingSpriteKey(): string {
+/** いま出撃しているのは最も弱い個体なので、その組み合わせの見た目を使う */
+function launchingMask(): number {
   const s = getState()
   const stacks = sortedByPower(s.inv, s.ranks, getConfig())
-  const head = stacks.find((x) => x.count >= 1)
-  if (!head) return 'mutation:twinHead'
-  const owned = MUTATIONS.filter((m) => head.mask & (1 << m.bit))
-  return `mutation:${owned.length ? owned[owned.length - 1].id : 'twinHead'}`
+  return stacks.find((x) => x.count >= 1)?.mask ?? 0
 }
 
 export function InvasionViewer() {
@@ -108,7 +101,7 @@ export function InvasionViewer() {
     let acc = 0
     let last = performance.now()
     let flash = 0
-    let keyCache = 'mutation:twinHead'
+    let maskCache = 0
     let keyAge = 0
     let raf = 0
 
@@ -125,7 +118,7 @@ export function InvasionViewer() {
       keyAge += dt
       if (keyAge > 0.2) {
         keyAge = 0
-        keyCache = launchingSpriteKey()
+        maskCache = launchingMask()
       }
 
       // --- 湧かせる（実際の投入速度そのまま） ---
@@ -144,7 +137,7 @@ export function InvasionViewer() {
             vrot: 0,
             alpha: 1,
             bounced: false,
-            key: keyCache,
+            mask: maskCache,
           })
         }
       } else {
@@ -198,18 +191,19 @@ export function InvasionViewer() {
       ctx.drawImage(bImg, w - bSize - 14, ground - bSize, bSize, bSize)
 
       // サメ
-      const sSize = 20
+      const sH = 18
       for (const p of parts) {
-        const img = sprite(p.key, 32)
+        const img = sharkSprite(p.mask, 1)
+        const w = (img.width / img.height) * sH
         if (p.bounced) {
           ctx.save()
           ctx.globalAlpha = Math.max(0, p.alpha)
           ctx.translate(p.x, p.y)
           ctx.rotate(p.rot)
-          ctx.drawImage(img, -sSize / 2, -sSize / 2, sSize, sSize)
+          ctx.drawImage(img, -w / 2, -sH / 2, w, sH)
           ctx.restore()
         } else {
-          ctx.drawImage(img, p.x - sSize / 2, p.y - sSize / 2, sSize, sSize)
+          ctx.drawImage(img, p.x - w / 2, p.y - sH / 2, w, sH)
         }
       }
 

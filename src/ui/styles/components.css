@@ -397,3 +397,24 @@
   text-align: left;
 }
 .dbg-btns button:hover { border-color: var(--c-line-hi); background: var(--c-panel-hi); }
+
+/* ---- スプライト確認（開発時のみ） ---- */
+.slab { max-width: 1000px; max-height: 88vh; overflow-y: auto; }
+.slab-head { display: flex; align-items: center; gap: var(--sp-4); }
+.slab-head .btn { margin-left: auto; }
+.slab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--sp-2);
+}
+.slab-cell {
+  display: flex; flex-direction: column; align-items: center; gap: var(--sp-1);
+  background: var(--c-bg-deep);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-1);
+  padding: var(--sp-2);
+}
+.slab-cell canvas { image-rendering: pixelated; }
+.slab-cell span { color: var(--c-text-dim); font-size: var(--fs-xs); text-align: center; }
+
+.shark-icon { image-rendering: pixelated; flex: 0 0 auto; }

@@ -1,0 +1,336 @@
+import type { MutationDef, MutationId, MutationMask } from '../game/mutations.ts'
+import { MUTATIONS } from '../game/mutations.ts'
+import {
+  BODY_W,
+  BODY_X,
+  bodyHalf,
+  drawBody,
+  drawFin,
+  drawTail,
+  FRAME_H,
+  FRAME_W,
+  MID_Y,
+  outline,
+  PALETTE,
+  px,
+  type RGB,
+  tint,
+} from './pixel.ts'
+
+/**
+ * 複合サメのスプライトを組み立てる。
+ *
+ * 変異は 18 種あり、組み合わせは 2^18 = 262,144 通りある。
+ * 差分を描き分けるのは不可能なので、変異ごとに「絵のどこをどういじるか」だけを定義し、
+ * 描画時に積み上げて 1 枚に焼く。
+ *
+ * チャンネルが違えば無条件に重なる。
+ *   part     … 部位の置換（スロットごとに排他。レア度が高い方が勝つ）
+ *   attach   … 部位の追加（重複可）
+ *   transform… 大きさ・体数・傾き（乗算）
+ *   palette  … 色を寄せる（順に合成）
+ *   overlay  … 全身のエフェクト（加算）
+ *
+ * 合成した結果は mask 単位でキャッシュするため、コストは
+ * 「その種類が初めて描かれた 1 回」だけで済む。
+ */
+
+type Ctx = CanvasRenderingContext2D
+
+export type PartSlot = 'head' | 'tail' | 'body'
+
+export type Visual = {
+  part?: { slot: PartSlot; draw: (ctx: Ctx) => void }
+  attach?: (ctx: Ctx) => void
+  transform?: { scale?: number; count?: number; tilt?: number }
+  palette?: { rgb: RGB; amount: number }
+  overlay?: (ctx: Ctx) => void
+}
+
+const RARITY_PRIORITY = { common: 1, uncommon: 2, rare: 3, legendary: 4 } as const
+
+// ---------------------------------------------------------------------------
+// 変異ごとの見た目
+// ---------------------------------------------------------------------------
+
+const VISUALS: Partial<Record<MutationId, Visual>> = {
+  // --- 生体系 ---
+  glow: {
+    overlay: (ctx) => outline(ctx, FRAME_W, FRAME_H, [140, 255, 210], 0.85),
+  },
+  frenzy: {
+    palette: { rgb: [210, 60, 50], amount: 0.42 },
+    attach: (ctx) => {
+      // 開いた口と牙
+      px(ctx, BODY_X + 44, MID_Y + 1, 6, 1, PALETTE.mouth)
+      for (let i = 0; i < 3; i++) px(ctx, BODY_X + 45 + i * 2, MID_Y - 1, 1, 2, '#ffffff')
+    },
+  },
+  twinHead: {
+    part: {
+      slot: 'head',
+      draw: (ctx) => {
+        // 頭をもう 1 つ、少し上にずらして生やす
+        for (let i = 30; i < BODY_W; i++) {
+          const h = Math.round(bodyHalf(i) * 0.72)
+          if (h <= 0) continue
+          px(ctx, BODY_X + i + 2, MID_Y - 9 - h, 1, h * 2, PALETTE.body)
+        }
+        px(ctx, BODY_X + 42, MID_Y - 12, 2, 2, PALETTE.eye)
+      },
+    },
+  },
+  swarm: {
+    transform: { count: 3, scale: 0.62 },
+  },
+  giant: {
+    transform: { scale: 1.5 },
+  },
+  ancient: {
+    palette: { rgb: [150, 128, 84], amount: 0.45 },
+    attach: (ctx) => {
+      // 背に骨質の隆起
+      for (let i = 0; i < 5; i++) {
+        px(ctx, BODY_X + 16 + i * 5, MID_Y - bodyHalf(16 + i * 5) - 2, 2, 3, '#e6dcc0')
+      }
+    },
+  },
+
+  // --- 深海系 ---
+  pressure: {
+    palette: { rgb: [110, 138, 160], amount: 0.4 },
+    transform: { scale: 1.12 },
+  },
+  abyss: {
+    palette: { rgb: [40, 30, 78], amount: 0.55 },
+    overlay: (ctx) => outline(ctx, FRAME_W, FRAME_H, [120, 90, 220], 0.5),
+  },
+  tentacle: {
+    part: {
+      slot: 'tail',
+      draw: (ctx) => {
+        // 尾びれをタコ足に置き換える
+        for (let t = 0; t < 4; t++) {
+          const baseY = MID_Y - 6 + t * 4
+          for (let i = 0; i < 12; i++) {
+            const wob = Math.round(Math.sin(i * 0.7 + t * 1.9) * 2)
+            px(ctx, BODY_X + 2 - i, baseY + wob, 1, 2, t % 2 ? '#8c5a86' : '#a06898')
+          }
+        }
+      },
+    },
+  },
+  eldritch: {
+    palette: { rgb: [90, 40, 110], amount: 0.35 },
+    attach: (ctx) => {
+      // 体表に増えた眼
+      for (const [x, y] of [[20, -4], [26, 2], [32, -6], [36, 3], [24, -8]] as const) {
+        px(ctx, BODY_X + x, MID_Y + y, 3, 3, '#ffe98a')
+        px(ctx, BODY_X + x + 1, MID_Y + y + 1, 1, 1, '#1a0f24')
+      }
+    },
+  },
+
+  // --- 機械系 ---
+  armor: {
+    attach: (ctx) => {
+      for (let i = 12; i < 40; i += 6) {
+        const h = bodyHalf(i)
+        px(ctx, BODY_X + i, MID_Y - h, 4, h * 2, PALETTE.metal)
+        px(ctx, BODY_X + i, MID_Y - h, 4, 1, PALETTE.metalDark)
+      }
+    },
+  },
+  mecha: {
+    part: {
+      slot: 'body',
+      draw: (ctx) => {
+        // 胴の後ろ半分を機械に置換
+        drawBody(ctx, { from: 0, to: 26, body: PALETTE.metal, belly: '#cdd4da' })
+        for (let i = 6; i < 26; i += 5) px(ctx, BODY_X + i, MID_Y - bodyHalf(i), 1, bodyHalf(i) * 2, PALETTE.metalDark)
+        px(ctx, BODY_X + 10, MID_Y - 2, 4, 4, '#ff6a4d')
+      },
+    },
+  },
+  volt: {
+    overlay: (ctx) => {
+      ctx.globalAlpha = 0.95
+      for (let s = 0; s < 3; s++) {
+        let x = BODY_X + 10 + s * 12
+        let y = MID_Y - 12 + s * 3
+        for (let i = 0; i < 7; i++) {
+          px(ctx, x, y, 2, 1, '#8ff0ff')
+          x += i % 2 ? 2 : -1
+          y += 2
+        }
+      }
+      ctx.globalAlpha = 1
+    },
+  },
+  autonomous: {
+    attach: (ctx) => {
+      // 背に砲塔
+      px(ctx, BODY_X + 24, MID_Y - bodyHalf(24) - 5, 8, 5, PALETTE.metal)
+      px(ctx, BODY_X + 30, MID_Y - bodyHalf(24) - 4, 7, 2, PALETTE.metalDark)
+      px(ctx, BODY_X + 26, MID_Y - bodyHalf(24) - 7, 2, 2, '#ff4d4d')
+    },
+  },
+
+  // --- 宇宙系 ---
+  zeroG: {
+    transform: { tilt: -0.28 },
+    palette: { rgb: [200, 220, 255], amount: 0.25 },
+  },
+  meteor: {
+    overlay: (ctx) => {
+      // 尾を引く火の粉
+      for (let i = 0; i < 18; i++) {
+        const x = BODY_X - 2 - i
+        const y = MID_Y + Math.round(Math.sin(i * 0.9) * 3)
+        const c = i < 6 ? '#fff2a0' : i < 12 ? '#ff9d3c' : '#d94a2a'
+        px(ctx, x, y, 2, 2, c)
+      }
+    },
+  },
+  cosmic: {
+    palette: { rgb: [24, 16, 52], amount: 0.6 },
+    overlay: (ctx) => {
+      // 体表に星空
+      for (let i = 0; i < 26; i++) {
+        const gx = BODY_X + 6 + ((i * 17) % 40)
+        const gy = MID_Y - 8 + ((i * 11) % 16)
+        px(ctx, gx, gy, 1, 1, i % 4 ? '#ffffff' : '#9fd0ff')
+      }
+    },
+  },
+  alien: {
+    palette: { rgb: [80, 230, 120], amount: 0.5 },
+    attach: (ctx) => {
+      // 触角と大きい単眼
+      px(ctx, BODY_X + 40, MID_Y - bodyHalf(40) - 6, 1, 6, '#c8ffd8')
+      px(ctx, BODY_X + 39, MID_Y - bodyHalf(40) - 8, 3, 3, '#e8ff6a')
+      px(ctx, BODY_X + 41, MID_Y - 3, 5, 5, '#111820')
+      px(ctx, BODY_X + 42, MID_Y - 2, 2, 2, '#c8ff6a')
+    },
+  },
+}
+
+// ---------------------------------------------------------------------------
+// 合成
+// ---------------------------------------------------------------------------
+
+function newCanvas(w: number, h: number): { c: HTMLCanvasElement; g: Ctx } {
+  const c = document.createElement('canvas')
+  c.width = w
+  c.height = h
+  const g = c.getContext('2d')!
+  g.imageSmoothingEnabled = false
+  return { c, g }
+}
+
+/** ベースのサメ 1 体ぶん（部位の置換を反映して）を 1 枚に描く */
+function drawOne(g: Ctx, parts: Map<PartSlot, Visual['part']>, attaches: Array<(c: Ctx) => void>): void {
+  const tail = parts.get('tail')
+  const body = parts.get('body')
+  const head = parts.get('head')
+
+  if (tail) tail.draw(g)
+  else drawTail(g)
+
+  drawBody(g)
+  if (body) body.draw(g)
+
+  // 背びれ・胸びれ
+  drawFin(g, BODY_X + 18, MID_Y - bodyHalf(18), 9, 7, -1)
+  drawFin(g, BODY_X + 30, MID_Y + bodyHalf(30) - 1, 7, 5, 1)
+
+  // 目と口
+  px(g, BODY_X + 41, MID_Y - 3, 2, 2, PALETTE.eye)
+  px(g, BODY_X + 43, MID_Y + 2, 5, 1, PALETTE.mouth)
+
+  if (head) head.draw(g)
+  for (const a of attaches) a(g)
+}
+
+const cache = new Map<string, HTMLCanvasElement>()
+
+/**
+ * 変異の組み合わせからスプライトを作る。結果は mask 単位でキャッシュする。
+ * scale は論理ピクセル 1 つを何 px で描くか。
+ */
+export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
+  const key = `${mask}@${scale}`
+  const hit = cache.get(key)
+  if (hit) return hit
+
+  const defs: MutationDef[] = MUTATIONS.filter((m) => mask & (1 << m.bit))
+
+  // --- チャンネルごとに集約 ---
+  const parts = new Map<PartSlot, Visual['part']>()
+  const partPriority = new Map<PartSlot, number>()
+  const attaches: Array<(c: Ctx) => void> = []
+  const palettes: Array<{ rgb: RGB; amount: number }> = []
+  const overlays: Array<(c: Ctx) => void> = []
+  let scaleMult = 1
+  let count = 1
+  let tilt = 0
+
+  for (const d of defs) {
+    const v = VISUALS[d.id]
+    if (!v) continue
+    if (v.part) {
+      // 同じスロットを取り合ったらレア度が高い方が勝つ
+      const p = RARITY_PRIORITY[d.rarity]
+      if ((partPriority.get(v.part.slot) ?? -1) < p) {
+        parts.set(v.part.slot, v.part)
+        partPriority.set(v.part.slot, p)
+      }
+    }
+    if (v.attach) attaches.push(v.attach)
+    if (v.palette) palettes.push(v.palette)
+    if (v.overlay) overlays.push(v.overlay)
+    if (v.transform) {
+      if (v.transform.scale) scaleMult *= v.transform.scale
+      if (v.transform.count) count = Math.max(count, v.transform.count)
+      if (v.transform.tilt) tilt += v.transform.tilt
+    }
+  }
+
+  // --- 1 体ぶんを論理サイズで描く ---
+  const { c: unit, g: ug } = newCanvas(FRAME_W, FRAME_H)
+  drawOne(ug, parts, attaches)
+  for (const p of palettes) tint(ug, FRAME_W, FRAME_H, p.rgb, p.amount)
+  for (const o of overlays) o(ug)
+
+  // --- 変形を適用して最終キャンバスへ ---
+  const outW = Math.ceil(FRAME_W * scaleMult * scale)
+  const outH = Math.ceil(FRAME_H * scaleMult * scale)
+  const { c: out, g } = newCanvas(outW, outH)
+
+  const placements =
+    count === 1
+      ? [{ x: 0, y: 0, s: 1 }]
+      : [
+          { x: 0.02, y: -0.16, s: 0.66 },
+          { x: 0.3, y: 0.1, s: 0.72 },
+          { x: 0.58, y: -0.04, s: 0.6 },
+        ].slice(0, count)
+
+  for (const p of placements) {
+    g.save()
+    g.translate(p.x * outW + outW / 2, p.y * outH + outH / 2)
+    if (tilt) g.rotate(tilt)
+    const w = outW * p.s
+    const h = outH * p.s
+    g.drawImage(unit, -w / 2, -h / 2, w, h)
+    g.restore()
+  }
+
+  cache.set(key, out)
+  return out
+}
+
+/** 在庫やリザルトなど、DOM に画像として置きたい場所向け */
+export function sharkDataUrl(mask: MutationMask, scale = 2): string {
+  return sharkSprite(mask, scale).toDataURL()
+}

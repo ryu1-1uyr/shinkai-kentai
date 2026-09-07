@@ -10,6 +10,7 @@ import {
 } from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
+import { SpriteLab } from './SpriteLab.tsx'
 
 /**
  * 開発用パネル。
@@ -18,6 +19,7 @@ import { useGame } from '../useGame.ts'
 export function DebugPanel() {
   const s = useGame()
   const [open, setOpen] = useState(false)
+  const [lab, setLab] = useState(false)
   const meta = getMeta()
 
   if (!import.meta.env.DEV) return null
@@ -31,6 +33,8 @@ export function DebugPanel() {
   }
 
   return (
+    <>
+      {lab && <SpriteLab onClose={() => setLab(false)} />}
     <div className="dbg">
       <div className="dbg-head">
         <span>DEV</span>
@@ -46,8 +50,10 @@ export function DebugPanel() {
         <button onClick={() => debugAddCulture(1e6)}>培養液 +1M</button>
         <button onClick={debugSkipCulture}>培養フェーズを飛ばす</button>
         <button onClick={debugEndRun}>ランを終了</button>
+        <button onClick={() => setLab(true)}>スプライト合成を確認</button>
         <button onClick={wipeMeta}>メタをリセット</button>
       </div>
     </div>
+    </>
   )
 }

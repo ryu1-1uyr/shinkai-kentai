@@ -2,7 +2,7 @@ import { powerAt, rateAt } from '../../game/mutations.ts'
 import { chooseDraft, getConfig, reroll } from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
-import { Sprite } from './Sprite.tsx'
+import { SharkIcon } from './SharkIcon.tsx'
 
 const RARITY_LABEL: Record<string, string> = {
   common: 'COMMON',
@@ -40,7 +40,7 @@ export function DraftOverlay() {
             const next = cur + 1
             return (
               <button key={m.id} className="card" data-rarity={m.rarity} onClick={() => chooseDraft(i)}>
-                <Sprite kind="mutation" id={m.id} />
+                <SharkIcon mask={1 << m.bit} height={34} />
                 <span className="card-rarity">{RARITY_LABEL[m.rarity]}</span>
                 <span className="card-name">{m.name}</span>
                 <span className="card-effect">

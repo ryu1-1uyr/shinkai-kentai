@@ -1,0 +1,158 @@
+/**
+ * ドット絵を手続きで描くための最小限のヘルパー。
+ *
+ * ここで描いているのは、合成システムが機能するかを確かめるための仮の絵。
+ * 本番のドット絵ができたら、各レイヤーの draw を drawImage に差し替えるだけで済む
+ * （インターフェースは変えない）。
+ */
+
+export type RGB = [number, number, number]
+
+export const PALETTE = {
+  body: '#7d90a6',
+  belly: '#c3d0de',
+  shade: '#5b6c80',
+  fin: '#64768a',
+  eye: '#111820',
+  mouth: '#2a3542',
+  metal: '#9aa4ad',
+  metalDark: '#5d666e',
+  accent: '#ffd479',
+}
+
+/** サメ 1 体を描く論理キャンバスの大きさ。装飾がはみ出せるよう本体より広く取る */
+export const FRAME_W = 64
+export const FRAME_H = 40
+/** 本体（48×24）の左上位置 */
+export const BODY_X = 8
+export const BODY_Y = 8
+export const BODY_W = 48
+export const BODY_H = 24
+/** 体の中心線 */
+export const MID_Y = BODY_Y + 12
+
+export function px(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  color: string,
+): void {
+  ctx.fillStyle = color
+  ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h)))
+}
+
+/**
+ * 体の縦半径。右（x が大きい方）が頭。
+ * 一番太いのが後ろ寄り 44% の位置に来るようにしてサメらしい輪郭を作る。
+ */
+export function bodyHalf(i: number): number {
+  if (i < 4) return 0
+  const t = Math.min(1, (i - 4) / 43)
+  const base = Math.sin(Math.PI * Math.pow(t, 0.85))
+  const taper = t > 0.86 ? 1 - (t - 0.86) / 0.15 : 1
+  return Math.max(0, Math.round((1 + base * 8) * Math.max(0, taper)))
+}
+
+/** 体の輪郭を塗る。色を差し替えれば機械化などの部分置換に使える */
+export function drawBody(
+  ctx: CanvasRenderingContext2D,
+  opts: { from?: number; to?: number; body?: string; belly?: string } = {},
+): void {
+  const from = opts.from ?? 0
+  const to = opts.to ?? BODY_W
+  for (let i = from; i < to; i++) {
+    const h = bodyHalf(i)
+    if (h <= 0) continue
+    const x = BODY_X + i
+    px(ctx, x, MID_Y - h, 1, h * 2, opts.body ?? PALETTE.body)
+    // 腹側を明るく
+    px(ctx, x, MID_Y + h - Math.max(1, Math.floor(h * 0.45)), 1, Math.max(1, Math.floor(h * 0.45)), opts.belly ?? PALETTE.belly)
+  }
+}
+
+/** 三角のヒレ */
+export function drawFin(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  dir: -1 | 1,
+  color = PALETTE.fin,
+): void {
+  for (let i = 0; i < w; i++) {
+    const t = i / w
+    const len = Math.round(h * (1 - t))
+    if (len <= 0) continue
+    px(ctx, x + i, dir < 0 ? y - len : y, 1, len, color)
+  }
+}
+
+/** 尾びれ（三日月） */
+export function drawTail(ctx: CanvasRenderingContext2D, color = PALETTE.fin): void {
+  const x = BODY_X
+  for (let i = 0; i < 7; i++) {
+    const len = 3 + i * 1.4
+    px(ctx, x + i - 5, MID_Y - len, 1, len, color)
+    px(ctx, x + i - 5, MID_Y, 1, len * 0.75, color)
+  }
+}
+
+/** 画素単位で色味を寄せる。パレット変化の合成に使う */
+export function tint(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  rgb: RGB,
+  amount: number,
+): void {
+  const img = ctx.getImageData(0, 0, w, h)
+  const d = img.data
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0) continue
+    d[i] = d[i] + (rgb[0] - d[i]) * amount
+    d[i + 1] = d[i + 1] + (rgb[1] - d[i + 1]) * amount
+    d[i + 2] = d[i + 2] + (rgb[2] - d[i + 2]) * amount
+  }
+  ctx.putImageData(img, 0, 0)
+}
+
+/** 不透明な画素の外周に色を足す（発光やオーラ用） */
+export function outline(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  color: RGB,
+  alpha: number,
+): void {
+  const img = ctx.getImageData(0, 0, w, h)
+  const src = img.data
+  const out = ctx.createImageData(w, h)
+  const dst = out.data
+  dst.set(src)
+  const at = (x: number, y: number) => (y * w + x) * 4
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = at(x, y)
+      if (src[i + 3] !== 0) continue
+      let near = false
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        const nx = x + dx
+        const ny = y + dy
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue
+        if (src[at(nx, ny) + 3] > 0) {
+          near = true
+          break
+        }
+      }
+      if (!near) continue
+      dst[i] = color[0]
+      dst[i + 1] = color[1]
+      dst[i + 2] = color[2]
+      dst[i + 3] = Math.round(255 * alpha)
+    }
+  }
+  ctx.putImageData(out, 0, 0)
+}
