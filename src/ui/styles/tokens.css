@@ -1,0 +1,56 @@
+/*
+ * デザイントークン。
+ * ガワの差し替えはこのファイルを置き換えるだけで完結させる。
+ * コンポーネント側には色・余白・フォントを一切書かない。
+ */
+:root {
+  /* 面 */
+  --c-bg: #070c14;
+  --c-bg-deep: #04070d;
+  --c-panel: #101a28;
+  --c-panel-hi: #16233544;
+  --c-line: #1e2f45;
+  --c-line-hi: #2d4763;
+
+  /* 文字 */
+  --c-text: #cfe0f0;
+  --c-text-dim: #6f84a0;
+  --c-text-mute: #445a75;
+
+  /* 役割色 */
+  --c-culture: #4fd0e0;
+  --c-shark: #7fe08a;
+  --c-score: #ffb454;
+  --c-danger: #ff5f56;
+  --c-boss: #ff8ac4;
+
+  /* レア度 */
+  --c-common: #7f95ad;
+  --c-uncommon: #5fd08a;
+  --c-rare: #58a6ff;
+  --c-legendary: #ffb454;
+
+  /* 余白・角丸 */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --r-1: 4px;
+  --r-2: 8px;
+
+  /* 文字サイズ */
+  --fs-xs: 11px;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+  --fs-lg: 20px;
+  --fs-xl: 32px;
+
+  --font-ui: ui-sans-serif, system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-num: ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* スプライトの既定サイズ。画像を当てるときはここを変える */
+  --sprite-size: 22px;
+  /* グラフィックはドット絵を前提とする。拡大時に補間させない */
+  --sprite-rendering: pixelated;
+}

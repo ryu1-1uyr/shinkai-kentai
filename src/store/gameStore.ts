@@ -1,0 +1,230 @@
+import { BUILDINGS, type BuildingDef, costOf } from '../game/buildings.ts'
+import { type Config, DEFAULT_CONFIG } from '../game/config.ts'
+import {
+  applyMetaToConfig,
+  budgetFor,
+  buyNumeric,
+  buyUnlock,
+  type MetaState,
+  metaEffects,
+} from '../game/meta.ts'
+import { createState, type GameState } from '../game/state.ts'
+import { applyDraft, clickValue, tick } from '../game/tick.ts'
+import { loadMeta, resetMeta, saveMeta } from '../meta/save.ts'
+
+/**
+ * ゲーム状態は React の外に置き、useSyncExternalStore で購読する。
+ * tick は 20Hz で回るが、React への通知は 10Hz に間引く。
+ */
+
+export type Speed = 1 | 2 | 4
+
+export type Screen = 'run' | 'lab'
+
+let meta: MetaState = loadMeta()
+const baseCfg: Config = DEFAULT_CONFIG
+let cfg: Config = applyMetaToConfig(baseCfg, metaEffects(meta))
+let state: GameState = createState(cfg, Math.floor(Math.random() * 1e9), metaEffects(meta))
+let speed: Speed = 1
+let version = 0
+let running = false
+let screen: Screen = 'run'
+/** 直近のランで得た研究予算。リザルト表示に使う */
+let lastAward = 0
+let autoBuyOn = true
+/** このランの報酬を確定済みか */
+let awarded = false
+
+const listeners = new Set<() => void>()
+
+function emit(): void {
+  version += 1
+  for (const l of listeners) l()
+}
+
+export function subscribe(l: () => void): () => void {
+  listeners.add(l)
+  return () => {
+    listeners.delete(l)
+  }
+}
+
+export function getVersion(): number {
+  return version
+}
+
+export function getState(): GameState {
+  return state
+}
+
+export function getConfig(): Config {
+  return cfg
+}
+
+export function getSpeed(): Speed {
+  return speed
+}
+
+export function setSpeed(s: Speed): void {
+  if (s > metaEffects(meta).maxSpeed) return
+  speed = s
+  emit()
+}
+
+export function getMeta(): MetaState {
+  return meta
+}
+
+export function getScreen(): Screen {
+  return screen
+}
+
+export function setScreen(v: Screen): void {
+  screen = v
+  emit()
+}
+
+export function getLastAward(): number {
+  return lastAward
+}
+
+export function isAutoBuyOn(): boolean {
+  return autoBuyOn
+}
+
+export function toggleAutoBuy(): void {
+  autoBuyOn = !autoBuyOn
+  emit()
+}
+
+export function purchaseNumeric(id: string): void {
+  if (buyNumeric(meta, id)) {
+    saveMeta(meta)
+    emit()
+  }
+}
+
+export function purchaseUnlock(id: string): void {
+  if (buyUnlock(meta, id)) {
+    saveMeta(meta)
+    emit()
+  }
+}
+
+export function wipeMeta(): void {
+  meta = resetMeta()
+  startNewRun()
+}
+
+// --- プレイヤー操作 -------------------------------------------------------
+
+export function manualClick(): void {
+  if (state.phase === 'over' || state.pendingOffers) return
+  state.culture += clickValue(state, cfg)
+  emit()
+}
+
+export function canAfford(def: BuildingDef, owned: number): boolean {
+  return state.culture >= costOf(def, owned)
+}
+
+/** 自動発注。買える設備を安い順に買う */
+function runAutoBuy(): void {
+  if (!autoBuyOn || !state.meta.autoBuy) return
+  for (let guard = 0; guard < 60; guard++) {
+    let best = -1
+    let bestCost = Infinity
+    for (let i = 0; i < BUILDINGS.length; i++) {
+      const c = costOf(BUILDINGS[i], state.buildings[i])
+      if (c <= state.culture && c < bestCost) {
+        bestCost = c
+        best = i
+      }
+    }
+    if (best < 0) return
+    state.culture -= bestCost
+    state.buildings[best] += 1
+  }
+}
+
+export function buy(index: number): void {
+  const def = BUILDINGS[index]
+  const cost = costOf(def, state.buildings[index])
+  if (state.culture < cost) return
+  state.culture -= cost
+  state.buildings[index] += 1
+  emit()
+}
+
+export function chooseDraft(index: number): void {
+  applyDraft(state, cfg, index)
+  emit()
+}
+
+export function startNewRun(): void {
+  const eff = metaEffects(meta)
+  cfg = applyMetaToConfig(baseCfg, eff)
+  state = createState(cfg, Math.floor(Math.random() * 1e9), eff)
+  speed = 1
+  lastAward = 0
+  awarded = false
+  screen = 'run'
+  emit()
+}
+
+/** ラン終了時に一度だけ呼ばれ、研究予算を確定する */
+function awardRun(): void {
+  lastAward = budgetFor(state.score, state.clearedDepth)
+  meta.budget += lastAward
+  meta.lifetimeBudget += lastAward
+  meta.runs += 1
+  meta.bestDepth = Math.max(meta.bestDepth, state.clearedDepth)
+  saveMeta(meta)
+}
+
+// --- ゲームループ ---------------------------------------------------------
+
+const TICK = 1 / DEFAULT_CONFIG.tickHz
+const NOTIFY_INTERVAL = 0.1 // 10Hz
+
+let acc = 0
+let sinceNotify = 0
+let last = 0
+
+function frame(now: number): void {
+  const rawDt = Math.min((now - last) / 1000, 0.25)
+  last = now
+  const dt = rawDt * speed
+  acc += dt
+
+  let ticked = false
+  while (acc >= TICK) {
+    acc -= TICK
+    if (state.phase === 'over' || state.pendingOffers) {
+      acc = 0
+      break
+    }
+    tick(state, { clicksPerSec: 0 }, cfg)
+    ticked = true
+  }
+
+  if (ticked) runAutoBuy()
+  if (!awarded && getState().phase === 'over') {
+    awarded = true
+    awardRun()
+  }
+
+  sinceNotify += rawDt
+  if (sinceNotify >= NOTIFY_INTERVAL || (ticked && state.pendingOffers) || state.phase === 'over') {
+    sinceNotify = 0
+    emit()
+  }
+  requestAnimationFrame(frame)
+}
+
+export function startLoop(): void {
+  if (running) return
+  running = true
+  last = performance.now()
+  requestAnimationFrame(frame)
+}

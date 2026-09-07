@@ -1,0 +1,81 @@
+import { BUILDINGS, costOf } from '../../game/buildings.ts'
+import { totalSharks } from '../../game/inventory.ts'
+import { clickValue, cultureRate, launchRate, sharkRate } from '../../game/tick.ts'
+import { buy, getConfig, manualClick } from '../../store/gameStore.ts'
+import { fmt } from '../format.ts'
+import { useGame } from '../useGame.ts'
+import { Sprite } from './Sprite.tsx'
+
+function effectText(id: string, cfg: ReturnType<typeof getConfig>): string {
+  switch (id) {
+    case 'tank': return `培養液 +1.0/s・クリック +${cfg.click.perTankBonus}`
+    case 'feeder': return '培養液 +10/s'
+    case 'breeder': return `サメ +0.8/s（培養液 ${cfg.shark.cultureCost}/体）`
+    case 'accelerator': return 'サメ生産 +20%'
+    case 'launcher': return '投入速度 +15/s'
+    default: return ''
+  }
+}
+
+export function ProducePanel() {
+  const s = useGame()
+  const cfg = getConfig()
+
+  return (
+    <div className="col area-produce">
+      <button className="click-area" onClick={manualClick}>
+        <Sprite kind="resource" id="culture" />
+        <span>培養液を採取</span>
+        <span className="click-hint">+{fmt(clickValue(s, cfg))} / クリック</span>
+      </button>
+
+      <div className="panel">
+        <div className="panel-title">資源</div>
+        <div className="stat" data-kind="culture">
+          <Sprite kind="resource" id="culture" />
+          <span className="stat-label">培養液</span>
+          <span className="stat-value">{fmt(s.culture)}</span>
+          <span className="stat-rate">+{fmt(cultureRate(s))}/s</span>
+        </div>
+        <div className="stat" data-kind="shark">
+          <Sprite kind="resource" id="shark" />
+          <span className="stat-label">検体</span>
+          <span className="stat-value">{fmt(totalSharks(s.inv))}</span>
+          <span className="stat-rate">+{fmt(sharkRate(s))}/s</span>
+        </div>
+        <div className="tally">
+          <span className="stat-label">累計生産</span>
+          <span className="tally-value">{fmt(s.producedTotal)}</span>
+          <span className="tally-unit">体</span>
+          <span className="tally-species">{s.births.size} 種</span>
+        </div>
+        <div className="stat" data-kind="score">
+          <Sprite kind="resource" id="score" />
+          <span className="stat-label">戦果</span>
+          <span className="stat-value">{fmt(s.score)}</span>
+          <span className="stat-rate">投入 {fmt(launchRate(s, cfg))}/s</span>
+        </div>
+      </div>
+
+      <div className="panel scroll">
+        <div className="panel-title">設備</div>
+        {BUILDINGS.map((b, i) => {
+          const cost = costOf(b, s.buildings[i])
+          return (
+            <button key={b.id} className="buy" disabled={s.culture < cost} onClick={() => buy(i)}>
+              <Sprite kind="building" id={b.id} />
+              <span className="buy-name">
+                {b.name}
+                <span className="buy-effect">{effectText(b.id, cfg)}</span>
+              </span>
+              <span className="buy-right">
+                <span className="buy-cost">{fmt(cost)}</span>
+                <span className="buy-owned">所持 {s.buildings[i]}</span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
