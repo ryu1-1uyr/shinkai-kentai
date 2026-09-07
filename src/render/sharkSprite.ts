@@ -15,7 +15,7 @@ import {
   PALETTE,
   px,
   type RGB,
-  tint,
+  tintBands,
 } from './pixel.ts'
 
 /**
@@ -429,7 +429,8 @@ export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
   // --- 1 体ぶんを論理サイズで描く ---
   const { c: unit, g: ug } = newCanvas(FRAME_W, FRAME_H)
   drawOne(ug, parts, attaches)
-  for (const p of palettes) tint(ug, FRAME_W, FRAME_H, p.rgb, p.amount)
+  // 色を変える変異が複数あるときは、混ぜずに体を等分して塗り分ける
+  tintBands(ug, FRAME_W, FRAME_H, palettes, BODY_X, BODY_X + BODY_W)
   for (const o of overlays) drawLayer(ug, `overlay/${o.id}`, o.draw)
 
   // --- 変形を適用して最終キャンバスへ ---

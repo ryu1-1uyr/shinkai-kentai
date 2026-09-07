@@ -100,6 +100,43 @@ export function drawTail(ctx: CanvasRenderingContext2D, color = PALETTE.fin): vo
   }
 }
 
+/**
+ * 体を長さ方向に等分し、区画ごとに別の色へ寄せる。
+ *
+ * 色を変える変異が複数付いたとき、順番に混ぜると後から来た色が前の色を潰して
+ * 「氷と炎を両方持つと氷になる」ような挙動になってしまう。
+ * 等分して塗り分ければ、**何色持っているかが見た目から数えられる**。
+ *
+ * 区画の並びは変異の定義順。サメは右を向いているので、
+ * 名前の接頭辞の並び（左から）と体の並び（尻尾から頭へ）が一致する。
+ */
+export function tintBands(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  bands: Array<{ rgb: RGB; amount: number }>,
+  x0: number,
+  x1: number,
+): void {
+  if (bands.length === 0) return
+  const img = ctx.getImageData(0, 0, w, h)
+  const d = img.data
+  const span = Math.max(1, x1 - x0)
+  const n = bands.length
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4
+      if (d[i + 3] === 0) continue
+      const t = (x - x0) / span
+      const b = bands[Math.max(0, Math.min(n - 1, Math.floor(t * n)))]
+      d[i] += (b.rgb[0] - d[i]) * b.amount
+      d[i + 1] += (b.rgb[1] - d[i + 1]) * b.amount
+      d[i + 2] += (b.rgb[2] - d[i + 2]) * b.amount
+    }
+  }
+  ctx.putImageData(img, 0, 0)
+}
+
 /** 画素単位で色味を寄せる。パレット変化の合成に使う */
 export function tint(
   ctx: CanvasRenderingContext2D,
