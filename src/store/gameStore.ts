@@ -5,6 +5,7 @@ import {
   budgetFor,
   buyNumeric,
   buyUnlock,
+  purchase,
   type MetaState,
   metaEffects,
   NUMERIC_UPGRADES,
@@ -109,6 +110,14 @@ export function getAutoBuyTarget(): number | null {
 export function setAutoBuyTarget(index: number | null): void {
   autoBuyTarget = autoBuyTarget === index ? null : index
   emit()
+}
+
+/** スキルツリーの節を 1 段買う。レベル制と買い切りの区別は meta 側が持つ */
+export function purchaseNode(id: string): void {
+  if (purchase(meta, id)) {
+    saveMeta(meta)
+    emit()
+  }
 }
 
 export function purchaseNumeric(id: string): void {

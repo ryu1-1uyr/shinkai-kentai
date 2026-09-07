@@ -86,12 +86,12 @@ export function InvasionPanel() {
       </div>
 
       <div className="panel scroll">
-        <div className="panel-title">交戦記録</div>
+        <div className="panel-title">観測記録</div>
         {s.log.length === 0 ? (
-          <p className="idle-note">まだ交戦していない。</p>
+          <p className="idle-note">まだ記録がない。</p>
         ) : (
           <ol className="log">
-            {s.log.slice(0, 14).map((e, i) => (
+            {s.log.slice(0, 16).map((e, i) => (
               <li key={`${e.t}-${i}`} className="log-row" data-kind={e.kind}>
                 <span className="log-time">{mmss(e.t)}</span>
                 <span className="log-text">{e.text}</span>

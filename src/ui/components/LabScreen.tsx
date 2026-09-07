@@ -1,26 +1,75 @@
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import {
-  NUMERIC_UPGRADES,
-  UNLOCKS,
-  unlockAvailable,
-  upgradeCost,
+  BRANCHES,
+  canPurchase,
+  nodeCost,
+  nodeDetail,
+  nodeKind,
+  nodeName,
+  nodeTaken,
+  nodeUnlocked,
+  NUMERIC_BY_ID,
+  TREE,
 } from '../../game/meta.ts'
-import {
-  getMeta,
-  purchaseNumeric,
-  purchaseUnlock,
-  startNewRun,
-} from '../../store/gameStore.ts'
+import { getMeta, purchaseNode, startNewRun } from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
-import { Sprite } from './Sprite.tsx'
+
+/**
+ * 配線。点灯判定は描画時に行う。
+ * meta は中身を書き換えて使い回しているため参照が変わらず、
+ * 計測側の依存配列に入れても購入のたびには走らない。
+ */
+type Line = { x1: number; y1: number; x2: number; y2: number; from: string }
 
 export function LabScreen() {
   useGame()
   const meta = getMeta()
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const nodeRefs = useRef(new Map<string, HTMLElement>())
+  const [lines, setLines] = useState<Line[]>([])
+  const [size, setSize] = useState({ w: 0, h: 0 })
 
-  const visibleUnlocks = UNLOCKS.filter(
-    (u) => meta.unlocked.includes(u.id) || unlockAvailable(meta, u),
-  )
+  /** 節同士をつなぐ線を、実際に配置された位置から測って引く */
+  const measure = useCallback(() => {
+    const wrap = wrapRef.current
+    if (!wrap) return
+    const base = wrap.getBoundingClientRect()
+    const next: Line[] = []
+    for (const n of TREE) {
+      const child = nodeRefs.current.get(n.id)
+      if (!child) continue
+      const cb = child.getBoundingClientRect()
+      for (const r of n.requires) {
+        const parent = nodeRefs.current.get(r)
+        if (!parent) continue
+        const pb = parent.getBoundingClientRect()
+        next.push({
+          x1: pb.left + pb.width / 2 - base.left,
+          y1: pb.bottom - base.top,
+          x2: cb.left + cb.width / 2 - base.left,
+          y2: cb.top - base.top,
+          from: r,
+        })
+      }
+    }
+    setSize({ w: base.width, h: base.height })
+    setLines(next)
+  }, [])
+
+  useLayoutEffect(() => {
+    measure()
+    const ro = new ResizeObserver(measure)
+    if (wrapRef.current) ro.observe(wrapRef.current)
+    window.addEventListener('resize', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [measure])
+
+  const maxRow = Math.max(...TREE.map((n) => n.row))
+  const maxCol = Math.max(...TREE.map((n) => n.col))
 
   return (
     <div className="lab">
@@ -42,107 +91,80 @@ export function LabScreen() {
         </button>
       </div>
 
-      <div className="lab-cols">
-        <div className="panel">
-          <div className="panel-title">系統の解禁 — ドラフトに出る変異が増える</div>
-          {visibleUnlocks
-            .filter((u) => u.kind === 'family')
-            .map((u) => {
-              const owned = meta.unlocked.includes(u.id)
-              return (
-                <button
-                  key={u.id}
-                  className="up"
-                  data-owned={owned}
-                  disabled={owned || meta.budget < u.cost}
-                  onClick={() => purchaseUnlock(u.id)}
-                >
-                  <span className="up-name">
-                    {u.name}
-                    <span className="up-detail">{u.detail}</span>
-                  </span>
-                  <span className="up-cost">{owned ? '解禁済み' : fmt(u.cost)}</span>
-                </button>
-              )
-            })}
-
-          <div className="panel-title" style={{ marginTop: 'var(--sp-3)' }}>
-            特殊装備 — 買い切りで挙動が変わる
-          </div>
-          {visibleUnlocks
-            .filter((u) => u.kind === 'unique')
-            .map((u) => {
-              const owned = meta.unlocked.includes(u.id)
-              return (
-                <button
-                  key={u.id}
-                  className="up"
-                  data-owned={owned}
-                  disabled={owned || meta.budget < u.cost}
-                  onClick={() => purchaseUnlock(u.id)}
-                >
-                  <span className="up-name">
-                    {u.name}
-                    <span className="up-detail">{u.detail}</span>
-                  </span>
-                  <span className="up-cost">{owned ? '装備済み' : fmt(u.cost)}</span>
-                </button>
-              )
-            })}
-
-          <div className="panel-title" style={{ marginTop: 'var(--sp-3)' }}>
-            利便性
-          </div>
-          {visibleUnlocks
-            .filter((u) => u.kind === 'qol')
-            .map((u) => {
-              const owned = meta.unlocked.includes(u.id)
-              return (
-                <button
-                  key={u.id}
-                  className="up"
-                  data-owned={owned}
-                  disabled={owned || meta.budget < u.cost}
-                  onClick={() => purchaseUnlock(u.id)}
-                >
-                  <span className="up-name">
-                    {u.name}
-                    <span className="up-detail">{u.detail}</span>
-                  </span>
-                  <span className="up-cost">{owned ? '取得済み' : fmt(u.cost)}</span>
-                </button>
-              )
-            })}
-        </div>
-
-        <div className="panel">
-          <div className="panel-title">数値強化</div>
-          {NUMERIC_UPGRADES.map((u) => {
-            const lv = meta.levels[u.id] ?? 0
-            const maxed = lv >= u.maxLevel
-            const cost = upgradeCost(u, lv)
-            return (
-              <button
-                key={u.id}
-                className="up"
-                disabled={maxed || meta.budget < cost}
-                onClick={() => purchaseNumeric(u.id)}
-              >
-                <span className="up-name">
-                  {u.name} <span className="up-level">Lv.{lv}</span>
-                  <span className="up-detail">{u.detail(lv + (maxed ? 0 : 1))}</span>
-                </span>
-                <span className="up-cost">{maxed ? 'MAX' : fmt(cost)}</span>
-              </button>
-            )
-          })}
-        </div>
+      <div className="tree-heads" style={{ gridTemplateColumns: `repeat(${maxCol + 1}, 1fr)` }}>
+        {Object.entries(BRANCHES).map(([id, b]) => {
+          const cols = TREE.filter((n) => n.branch === id).map((n) => n.col)
+          const from = Math.min(...cols)
+          const span = Math.max(...cols) - from + 1
+          return (
+            <div key={id} className="tree-head" style={{ gridColumn: `${from + 1} / span ${span}` }}>
+              <span className="tree-head-name">{b.name}</span>
+              <span className="tree-head-sub">{b.sub}</span>
+            </div>
+          )
+        })}
       </div>
 
-      <p className="empty-note">
-        <Sprite kind="resource" id="shark" /> 生産量が伸びるほどレアな変異が提示されやすくなる。
-        生産系の強化は、そのままレアカードへのアクセスにもなる。
-      </p>
+      <div
+        className="tree"
+        ref={wrapRef}
+        style={{
+          gridTemplateColumns: `repeat(${maxCol + 1}, 1fr)`,
+          gridTemplateRows: `repeat(${maxRow + 1}, auto)`,
+        }}
+      >
+        <svg className="tree-wires" width={size.w} height={size.h} aria-hidden="true">
+          {lines.map((l, i) => (
+            <path
+              key={i}
+              className="wire"
+              data-on={nodeTaken(meta, l.from)}
+              d={`M ${l.x1} ${l.y1} C ${l.x1} ${(l.y1 + l.y2) / 2}, ${l.x2} ${(l.y1 + l.y2) / 2}, ${l.x2} ${l.y2}`}
+            />
+          ))}
+        </svg>
+
+        {TREE.map((n) => {
+          const taken = nodeTaken(meta, n.id)
+          const open = nodeUnlocked(meta, n.id)
+          const cost = nodeCost(meta, n.id)
+          const buyable = canPurchase(meta, n.id)
+          const numeric = nodeKind(n.id) === 'numeric'
+          const lv = meta.levels[n.id] ?? 0
+          const max = numeric ? NUMERIC_BY_ID.get(n.id)!.maxLevel : 1
+
+          return (
+            <button
+              key={n.id}
+              ref={(el) => {
+                if (el) nodeRefs.current.set(n.id, el)
+                else nodeRefs.current.delete(n.id)
+              }}
+              className="node"
+              data-branch={n.branch}
+              data-taken={taken}
+              data-locked={!open}
+              data-buyable={buyable}
+              style={{ gridColumn: n.col + 1, gridRow: n.row + 1 }}
+              disabled={!buyable}
+              onClick={() => purchaseNode(n.id)}
+            >
+              <span className="node-name">
+                {nodeName(n.id)}
+                {numeric && (
+                  <span className="node-lv">
+                    {lv}/{max}
+                  </span>
+                )}
+              </span>
+              <span className="node-detail">{nodeDetail(meta, n.id)}</span>
+              <span className="node-cost">
+                {cost === null ? (numeric ? 'MAX' : '取得済み') : fmt(cost)}
+              </span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

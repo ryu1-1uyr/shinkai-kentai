@@ -387,6 +387,7 @@ export function budgetFor(score: number, clearedDepth: number): number {
 export function canBuyNumeric(m: MetaState, id: string): boolean {
   const u = NUMERIC_BY_ID.get(id)
   if (!u) return false
+  if (!nodeUnlocked(m, id)) return false
   const lv = m.levels[id] ?? 0
   return lv < u.maxLevel && m.budget >= upgradeCost(u, lv)
 }
@@ -402,8 +403,7 @@ export function buyNumeric(m: MetaState, id: string): boolean {
 
 export function unlockAvailable(m: MetaState, u: UnlockDef): boolean {
   if (m.unlocked.includes(u.id)) return false
-  if (u.requires && !m.unlocked.includes(u.requires)) return false
-  return true
+  return nodeUnlocked(m, u.id)
 }
 
 export function buyUnlock(m: MetaState, id: string): boolean {
@@ -412,4 +412,136 @@ export function buyUnlock(m: MetaState, id: string): boolean {
   m.budget -= u.cost
   m.unlocked.push(u.id)
   return true
+}
+
+// ---------------------------------------------------------------------------
+// スキルツリー
+// ---------------------------------------------------------------------------
+
+/**
+ * 恒久強化を系統ごとの枝に並べ、前提を満たさないと先に進めないようにする。
+ *
+ * 平坦な一覧だと「安い順に全部買う」以外の遊び方が無く、
+ * 何を伸ばしているのかがプレイヤーの中に残らない。
+ * 枝に分けて前提を付けると、序盤にどの方向へ振るかが選択になる。
+ */
+export type BranchId = 'prod' | 'spec' | 'raid' | 'lab' | 'fam' | 'ops'
+
+export const BRANCHES: Record<BranchId, { name: string; sub: string }> = {
+  prod: { name: '培養', sub: '培養液を増やす' },
+  spec: { name: '検体', sub: '検体を増やし強くする' },
+  raid: { name: '侵略', sub: '投入と破壊を伸ばす' },
+  lab: { name: '実験', sub: 'ドラフトを操作する' },
+  fam: { name: '系統', sub: '変異の種類を解禁する' },
+  ops: { name: '運用', sub: '周回を速くする' },
+}
+
+export type TreeNode = {
+  id: string
+  branch: BranchId
+  /** 表示上の列。枝が分かれるときだけずらす */
+  col: number
+  row: number
+  /** すべて取得済みでないと購入できない */
+  requires: string[]
+}
+
+export const TREE: TreeNode[] = [
+  // 培養 — 培養液の生産量
+  { id: 'clickPower', branch: 'prod', col: 0, row: 0, requires: [] },
+  { id: 'cultureRate', branch: 'prod', col: 0, row: 1, requires: ['clickPower'] },
+  { id: 'doubleClick', branch: 'prod', col: 0, row: 2, requires: ['cultureRate'] },
+  { id: 'tankSynergy', branch: 'prod', col: 0, row: 3, requires: ['doubleClick'] },
+  { id: 'feederSynergy', branch: 'prod', col: 0, row: 4, requires: ['tankSynergy'] },
+
+  // 検体 — 生産速度と戦闘力
+  { id: 'startTanks', branch: 'spec', col: 1, row: 0, requires: [] },
+  { id: 'sharkRate', branch: 'spec', col: 1, row: 1, requires: ['startTanks'] },
+  { id: 'startSharks', branch: 'spec', col: 1, row: 2, requires: ['sharkRate'] },
+  { id: 'sharkPower', branch: 'spec', col: 1, row: 3, requires: ['startSharks'] },
+  { id: 'breederSynergy', branch: 'spec', col: 1, row: 4, requires: ['sharkPower'] },
+
+  // 侵略 — 投入速度と破壊
+  { id: 'launchRate', branch: 'raid', col: 2, row: 0, requires: [] },
+  { id: 'lastStand', branch: 'raid', col: 2, row: 1, requires: ['launchRate'] },
+  { id: 'launcherSynergy', branch: 'raid', col: 2, row: 2, requires: ['lastStand'] },
+  { id: 'reservePower', branch: 'raid', col: 2, row: 3, requires: ['launcherSynergy'] },
+  { id: 'chainCollapse', branch: 'raid', col: 2, row: 4, requires: ['reservePower'] },
+
+  // 実験 — ドラフトへの干渉
+  { id: 'reroll', branch: 'lab', col: 3, row: 0, requires: [] },
+  { id: 'earlyDraft', branch: 'lab', col: 3, row: 1, requires: ['reroll'] },
+  { id: 'extraOffer', branch: 'lab', col: 3, row: 2, requires: ['earlyDraft'] },
+  { id: 'prototype', branch: 'lab', col: 3, row: 3, requires: ['extraOffer'] },
+
+  // 系統 — 変異プールの拡張
+  { id: 'family_abyss', branch: 'fam', col: 4, row: 0, requires: [] },
+  { id: 'family_mech', branch: 'fam', col: 4, row: 1, requires: ['family_abyss'] },
+  { id: 'family_cosmic', branch: 'fam', col: 4, row: 2, requires: ['family_mech'] },
+  { id: 'family_disaster', branch: 'fam', col: 4, row: 3, requires: ['family_cosmic'] },
+
+  // 運用 — ここだけ枝分かれする
+  { id: 'speed2', branch: 'ops', col: 5, row: 0, requires: [] },
+  { id: 'speed4', branch: 'ops', col: 6, row: 1, requires: ['speed2'] },
+  { id: 'autoClick', branch: 'ops', col: 5, row: 1, requires: ['speed2'] },
+  { id: 'autoBuyOne', branch: 'ops', col: 5, row: 2, requires: ['autoClick'] },
+  { id: 'autoBuyAll', branch: 'ops', col: 5, row: 3, requires: ['autoBuyOne'] },
+]
+
+export const TREE_BY_ID = new Map(TREE.map((n) => [n.id, n]))
+
+export type NodeKind = 'numeric' | 'unlock'
+
+export function nodeKind(id: string): NodeKind {
+  return NUMERIC_BY_ID.has(id) ? 'numeric' : 'unlock'
+}
+
+/** その節を「取得済み」とみなすか。レベル制は 1 段でも上げていれば取得済み */
+export function nodeTaken(m: MetaState, id: string): boolean {
+  return nodeKind(id) === 'numeric' ? (m.levels[id] ?? 0) > 0 : m.unlocked.includes(id)
+}
+
+/** 前提をすべて満たしているか */
+export function nodeUnlocked(m: MetaState, id: string): boolean {
+  const n = TREE_BY_ID.get(id)
+  if (!n) return true
+  return n.requires.every((r) => nodeTaken(m, r))
+}
+
+/** その節の次の 1 段にかかる費用。上限に達していれば null */
+export function nodeCost(m: MetaState, id: string): number | null {
+  if (nodeKind(id) === 'unlock') {
+    const u = UNLOCK_BY_ID.get(id)
+    if (!u || m.unlocked.includes(id)) return null
+    return u.cost
+  }
+  const u = NUMERIC_BY_ID.get(id)
+  if (!u) return null
+  const lv = m.levels[id] ?? 0
+  return lv >= u.maxLevel ? null : upgradeCost(u, lv)
+}
+
+export function nodeName(id: string): string {
+  return NUMERIC_BY_ID.get(id)?.name ?? UNLOCK_BY_ID.get(id)?.name ?? id
+}
+
+export function nodeDetail(m: MetaState, id: string): string {
+  const n = NUMERIC_BY_ID.get(id)
+  if (n) {
+    const lv = m.levels[id] ?? 0
+    return n.detail(Math.min(lv + 1, n.maxLevel))
+  }
+  return UNLOCK_BY_ID.get(id)?.detail ?? ""
+}
+
+/** 購入できるか。前提・上限・所持予算をすべて見る */
+export function canPurchase(m: MetaState, id: string): boolean {
+  if (!nodeUnlocked(m, id)) return false
+  const cost = nodeCost(m, id)
+  return cost !== null && m.budget >= cost
+}
+
+export function purchase(m: MetaState, id: string): boolean {
+  if (!canPurchase(m, id)) return false
+  return nodeKind(id) === 'numeric' ? buyNumeric(m, id) : buyUnlock(m, id)
 }

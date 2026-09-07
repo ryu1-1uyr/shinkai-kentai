@@ -1,13 +1,38 @@
 import type { Config } from './config.ts'
 import { BUILDINGS, BUILDING_INDEX } from './buildings.ts'
 import { addSharks, launchWeakest, totalSharks } from './inventory.ts'
-import { MUTATIONS, type MutationDef, type MutationId, offerWeight } from './mutations.ts'
+import {
+  hasMutation,
+  MUTATIONS,
+  type MutationDef,
+  type MutationId,
+  type MutationMask,
+  nameOfMask,
+  offerWeight,
+  powerOfMask,
+} from './mutations.ts'
 import { type GameState, pushLog, refreshBirthDist, rng } from './state.ts'
 import { bossHp, depthName, perDepthTime, targetCount, targetHp } from './targets.ts'
 
 /** そのティックのプレイヤー入力。シミュレータでは方針関数が埋める */
 export type TickInput = {
   clicksPerSec: number
+}
+
+/**
+ * 記録に残す価値のある個体か。
+ * 変異を 2 つ以上併せ持つ複合個体か、rare 以上の変異を持つもの。
+ * 通常サメがいちいち流れると記録が埋まって読めなくなる。
+ */
+function isNotable(mask: MutationMask): boolean {
+  let count = 0
+  let hasRare = false
+  for (const m of MUTATIONS) {
+    if (!hasMutation(mask, m)) continue
+    count++
+    if (m.rarity === 'rare' || m.rarity === 'legendary') hasRare = true
+  }
+  return count >= 2 || (count >= 1 && hasRare)
 }
 
 /** 設備の所持数 */
@@ -152,7 +177,13 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
     s.producedTotal += born
     for (const [mask, p] of s.birthDist) {
       addSharks(s.inv, mask, born * p)
-      s.births.set(mask, (s.births.get(mask) ?? 0) + born * p)
+      const before = s.births.get(mask) ?? 0
+      const after = before + born * p
+      s.births.set(mask, after)
+      // 1 体目が生まれた瞬間だけ、珍しい個体を記録に残す
+      if (before < 1 && after >= 1 && isNotable(mask)) {
+        pushLog(s, 'birth', `${nameOfMask(mask)} が誕生  戦闘力 ${Math.round(powerOfMask(mask, s.ranks, cfg))}`)
+      }
     }
   }
 

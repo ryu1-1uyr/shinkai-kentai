@@ -6,7 +6,7 @@ import { type MutationDef, type MutationId, type MutationMask, type MutationRank
 
 export type Phase = 'culture' | 'invasion' | 'over'
 
-export type LogKind = 'hit' | 'boss' | 'depth' | 'draft' | 'system'
+export type LogKind = 'hit' | 'boss' | 'depth' | 'draft' | 'system' | 'birth'
 export type LogEntry = { t: number; kind: LogKind; text: string }
 
 /** ログの保持件数。表示に使うぶんだけあればよい */
