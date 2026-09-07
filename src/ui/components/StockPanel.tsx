@@ -31,7 +31,7 @@ export function StockPanel() {
               const rank = s.ranks.get(m.id)!
               return (
                 <span key={m.id} className="mut" data-rarity={m.rarity}>
-                  <Sprite kind="mutation" id={m.id} />
+                  <Sprite kind="mutation" id={m.id} size={18} />
                   {m.name}
                   <span className="mut-rank">
                     R{rank} {(rateAt(m, rank, cfg) * 100).toFixed(0)}%

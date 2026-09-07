@@ -564,4 +564,33 @@ export function sharkDataUrl(mask: MutationMask, scale = 2): string {
 }
 
 // 画像が後から読み込まれたら、合成済みのキャッシュを捨てて描き直させる
-onAssetLoaded(() => cache.clear())
+onAssetLoaded(() => {
+  cache.clear()
+  boundsCache.clear()
+})
+
+/** 合成結果の不透明な範囲。アイコン表示で余白を切り落とすのに使う */
+const boundsCache = new Map<string, { x: number; y: number; w: number; h: number }>()
+
+export function sharkBounds(mask: MutationMask, scale = 1): { x: number; y: number; w: number; h: number } {
+  const key = `${mask}@${scale}`
+  const hit = boundsCache.get(key)
+  if (hit) return hit
+  const c = sharkSprite(mask, scale)
+  const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data
+  let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1
+  for (let y = 0; y < c.height; y++) {
+    for (let x = 0; x < c.width; x++) {
+      if (d[(y * c.width + x) * 4 + 3] < 8) continue
+      if (x < x0) x0 = x
+      if (x > x1) x1 = x
+      if (y < y0) y0 = y
+      if (y > y1) y1 = y
+    }
+  }
+  const box = x1 < 0
+    ? { x: 0, y: 0, w: c.width, h: c.height }
+    : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 }
+  boundsCache.set(key, box)
+  return box
+}

@@ -11,7 +11,42 @@ body {
   color: var(--c-text);
   font-family: var(--font-ui);
   font-size: var(--fs-sm);
-  -webkit-font-smoothing: antialiased;
+  /* ドット絵の書体なので、なめらかにせず輪郭を残す */
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+
+/*
+ * 空気感。ベタ塗りのままだと管理ツールに見えるため、
+ * 深海の「上から光が落ちて下は闇」を弱く敷き、粒子を乗せる。
+ * pointer-events は殺してあるので操作には影響しない。
+ */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* 水中の光と、四隅に落ちる暗がり */
+body::before {
+  background:
+    radial-gradient(120% 80% at 50% -10%, #0f2b30 0%, transparent 55%),
+    radial-gradient(100% 100% at 50% 120%, #000000 0%, transparent 60%),
+    radial-gradient(140% 110% at 50% 50%, transparent 45%, #000000cc 100%);
+}
+
+/* 粒子（フィルムグレイン） */
+body::after {
+  opacity: 0.16;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::after { opacity: 0.08; }
 }
 
 .app {

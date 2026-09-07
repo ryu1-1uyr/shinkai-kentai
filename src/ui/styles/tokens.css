@@ -2,33 +2,40 @@
  * デザイントークン。
  * ガワの差し替えはこのファイルを置き換えるだけで完結させる。
  * コンポーネント側には色・余白・フォントを一切書かない。
+ *
+ * 世界観は「深海の秘密研究施設でマッドサイエンティストがサメを培養する」。
+ * 配色は企業ダッシュボード的な青灰をやめ、
+ *   面   … 光の届かない深海（黒に緑を含ませる）
+ *   強調 … 生物発光（シアン緑）と検体（毒々しい緑）
+ *   警告 … 逆探知と破壊（琥珀・血）
+ * で構成する。
  */
 :root {
-  /* 面 */
-  --c-bg: #070c14;
-  --c-bg-deep: #04070d;
-  --c-panel: #101a28;
-  --c-panel-hi: #16233544;
-  --c-line: #1e2f45;
-  --c-line-hi: #2d4763;
+  /* 面 — 深海。青ではなく黒緑に寄せる */
+  --c-bg: #04080a;
+  --c-bg-deep: #010405;
+  --c-panel: #0b1418;
+  --c-panel-hi: #14232866;
+  --c-line: #2a4a54;
+  --c-line-hi: #437d89;
 
-  /* 文字 */
-  --c-text: #cfe0f0;
-  --c-text-dim: #6f84a0;
-  --c-text-mute: #445a75;
+  /* 文字 — わずかに緑を含んだ白 */
+  --c-text: #d8e8e3;
+  --c-text-dim: #88a5a2;
+  --c-text-mute: #6b8886;
 
   /* 役割色 */
-  --c-culture: #4fd0e0;
-  --c-shark: #7fe08a;
-  --c-score: #ffb454;
-  --c-danger: #ff5f56;
-  --c-boss: #ff8ac4;
+  --c-culture: #45e0c8;  /* 培養液 — 生物発光 */
+  --c-shark: #9ae86a;    /* 検体 */
+  --c-score: #ffb454;    /* 戦果 */
+  --c-danger: #ff5f4a;
+  --c-boss: #ff7ab0;
 
   /* レア度 */
-  --c-common: #7f95ad;
-  --c-uncommon: #5fd08a;
-  --c-rare: #58a6ff;
-  --c-legendary: #ffb454;
+  --c-common: #8ba3a1;
+  --c-uncommon: #6fd98a;
+  --c-rare: #5fb2ff;
+  --c-legendary: #ffcf5c;
 
   /* 余白・角丸 */
   --sp-1: 4px;
@@ -36,18 +43,23 @@
   --sp-3: 12px;
   --sp-4: 16px;
   --sp-5: 24px;
-  --r-1: 4px;
-  --r-2: 8px;
+  --r-1: 3px;
+  --r-2: 5px;
 
-  /* 文字サイズ */
-  --fs-xs: 11px;
-  --fs-sm: 13px;
-  --fs-md: 15px;
-  --fs-lg: 20px;
-  --fs-xl: 32px;
+  /* 文字サイズ — DotGothic16 は 16px 基準のビットマップ書体なので、
+     偶数かつ 16 に近い値で使うと潰れにくい */
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-md: 16px;
+  --fs-lg: 22px;
+  --fs-xl: 34px;
 
-  --font-ui: ui-sans-serif, system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif;
-  --font-num: ui-monospace, "SF Mono", Menlo, monospace;
+  /* 書体
+     display … B 級映画のポスター的な重み（見出し・深度・大きい数字）
+     ui      … ドット絵と同じ解像度感を持つビットマップ書体 */
+  --font-display: 'Dela Gothic One', 'Hiragino Sans', sans-serif;
+  --font-ui: 'DotGothic16', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  --font-num: 'DotGothic16', ui-monospace, monospace;
 
   /* スプライトの既定サイズ。画像を当てるときはここを変える */
   --sprite-size: 22px;

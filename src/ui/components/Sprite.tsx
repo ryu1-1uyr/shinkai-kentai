@@ -1,68 +1,68 @@
+import { useEffect, useRef } from 'react'
+import { MUTATION_BY_ID, maskOf, type MutationId } from '../../game/mutations.ts'
+import { pixelIcon } from '../../render/icons.ts'
+import { sharkBounds, sharkSprite } from '../../render/sharkSprite.ts'
+import { useAssetVersion } from '../useAssetVersion.ts'
+
 /**
- * 絵が入る箇所はすべてこのコンポーネントを通す。
+ * UI 上のアイコン。すべてドット絵で描く。
  *
- * DOM には `data-sprite="building:tank"` のように安定した ID が刻まれるので、
- * 後からグラフィックを当てるときは CSS 側でこのセレクタに background-image を
- * 指定し、.sprite-glyph を display:none にするだけでよい。
- * コンポーネントのコードを触る必要はない。
+ * 絵文字とドット絵のサメが同じ画面に並ぶと画風が衝突するため、絵文字は使わない。
+ * 変異のアイコンは、その変異が付いたサメのスプライトをそのまま縮めて出す
+ * （別に描く必要がなく、base.png を描き替えれば追従する）。
  */
 export type SpriteKind = 'building' | 'mutation' | 'resource' | 'target' | 'ui'
 
-const GLYPHS: Record<string, string> = {
-  'building:tank': '🧪',
-  'building:feeder': '🥩',
-  'building:breeder': '🧬',
-  'building:accelerator': '⚡',
-  'building:launcher': '🚀',
+export function Sprite({
+  kind,
+  id,
+  size = 22,
+}: {
+  kind: SpriteKind
+  id: string
+  size?: number
+}) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  const assetVersion = useAssetVersion()
 
-  'mutation:glow': '✨',
-  'mutation:frenzy': '🩸',
-  'mutation:swift': '💨',
-  'mutation:albino': '🤍',
-  'mutation:spike': '🦔',
-  'mutation:poison': '☠️',
-  'mutation:tripleHead': '🐉',
-  'mutation:triple': '🐠',
-  'mutation:fungus': '🍄',
-  'mutation:ghost': '👻',
-  'mutation:zombie': '🧟',
-  'mutation:tornado': '🌪',
-  'mutation:magma': '🌋',
-  'mutation:frozen': '🧊',
-  'mutation:storm': '⛈',
-  'mutation:tsunami': '🌊',
-  'mutation:twinHead': '🦈',
-  'mutation:swarm': '🐟',
-  'mutation:giant': '🐋',
-  'mutation:ancient': '🦕',
-  'mutation:pressure': '🌊',
-  'mutation:abyss': '🌑',
-  'mutation:tentacle': '🐙',
-  'mutation:eldritch': '👁',
-  'mutation:armor': '🛡',
-  'mutation:mecha': '🤖',
-  'mutation:volt': '⚡',
-  'mutation:autonomous': '🔫',
-  'mutation:zeroG': '🌀',
-  'mutation:meteor': '☄️',
-  'mutation:cosmic': '🌌',
-  'mutation:alien': '👽',
+  useEffect(() => {
+    const c = ref.current
+    if (!c) return
+    const g = c.getContext('2d')
+    if (!g) return
 
-  'resource:culture': '🧪',
-  'resource:shark': '🦈',
-  'resource:score': '💥',
+    // 変異と「検体」はサメのスプライトを流用する
+    let mask: number | null = null
+    if (kind === 'mutation') {
+      const def = MUTATION_BY_ID.get(id as MutationId)
+      if (def) mask = maskOf(def)
+    } else if (kind === 'resource' && id === 'shark') {
+      mask = 0
+    }
 
-  'target:normal': '🏢',
-  'target:boss': '🏛',
+    g.imageSmoothingEnabled = false
 
-  'ui:beam': '🛰',
-}
+    if (mask !== null) {
+      // サメは枠の余白を切り落としてから縮める
+      const src = sharkSprite(mask, 1)
+      const b = sharkBounds(mask, 1)
+      const scale = size / b.h
+      c.width = Math.max(1, Math.round(b.w * scale))
+      c.height = Math.max(1, Math.round(size))
+      g.clearRect(0, 0, c.width, c.height)
+      g.drawImage(src, b.x, b.y, b.w, b.h, 0, 0, c.width, c.height)
+      return
+    }
 
-export function Sprite({ kind, id }: { kind: SpriteKind; id: string }) {
-  const key = `${kind}:${id}`
-  return (
-    <span className="sprite" data-sprite={key} aria-hidden="true">
-      <span className="sprite-glyph">{GLYPHS[key] ?? '◻'}</span>
-    </span>
-  )
+    const src = pixelIcon(`${kind}:${id}`)
+    if (!src) return
+    // ドット絵アイコンは整数倍でしか拡大しない（半端に伸ばすと格子が崩れる）
+    const scale = Math.max(1, Math.floor(size / src.height))
+    c.width = src.width * scale
+    c.height = src.height * scale
+    g.clearRect(0, 0, c.width, c.height)
+    g.drawImage(src, 0, 0, c.width, c.height)
+  }, [kind, id, size, assetVersion])
+
+  return <canvas className="sprite" data-sprite={`${kind}:${id}`} ref={ref} aria-hidden="true" />
 }

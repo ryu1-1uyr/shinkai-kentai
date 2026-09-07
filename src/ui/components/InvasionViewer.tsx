@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { sortedByPower } from '../../game/inventory.ts'
 import { launchRate } from '../../game/tick.ts'
+import { pixelIcon } from '../../render/icons.ts'
 import { sharkSprite } from '../../render/sharkSprite.ts'
 import { getConfig, getSpeed, getState } from '../../store/gameStore.ts'
 
@@ -34,33 +35,6 @@ type P = {
   alpha: number
   bounced: boolean
   mask: number
-}
-
-/**
- * 建物は当面フォールバックの絵文字を焼いて使う。
- * サメ側は sharkSprite が合成済みのスプライトを返すのでそのまま drawImage する。
- */
-const TARGET_GLYPH: Record<string, string> = {
-  'target:normal': '🏢',
-  'target:boss': '🏛',
-}
-
-const cache = new Map<string, HTMLCanvasElement>()
-
-function sprite(key: string, size: number): HTMLCanvasElement {
-  const id = `${key}@${size}`
-  const hit = cache.get(id)
-  if (hit) return hit
-  const c = document.createElement('canvas')
-  c.width = size
-  c.height = size
-  const g = c.getContext('2d')!
-  g.font = `${Math.floor(size * 0.82)}px serif`
-  g.textAlign = 'center'
-  g.textBaseline = 'middle'
-  g.fillText(TARGET_GLYPH[key] ?? '🏢', size / 2, size / 2 + 1)
-  cache.set(id, c)
-  return c
 }
 
 /** いま出撃しているのは最も弱い個体なので、その組み合わせの見た目を使う */
@@ -179,16 +153,21 @@ export function InvasionViewer() {
       ctx.globalAlpha = 1
 
       // 建物
-      const bSize = 46
-      const bImg = sprite(s.onBoss ? 'target:boss' : 'target:normal', 64)
-      if (flash > 0) {
-        ctx.save()
-        ctx.globalAlpha = Math.min(1, flash * 6)
-        ctx.filter = 'brightness(2.4)'
-        ctx.drawImage(bImg, w - bSize - 14, ground - bSize, bSize, bSize)
-        ctx.restore()
+      const bImg = pixelIcon(s.onBoss ? 'target:boss' : 'target:normal')
+      if (bImg) {
+        const bH = Math.min(h - 16, 92)
+        const bW = (bImg.width / bImg.height) * bH
+        const bx0 = w - bW - 10
+        const by0 = ground - bH
+        if (flash > 0) {
+          ctx.save()
+          ctx.globalAlpha = Math.min(1, flash * 6)
+          ctx.filter = 'brightness(2.6)'
+          ctx.drawImage(bImg, bx0, by0, bW, bH)
+          ctx.restore()
+        }
+        ctx.drawImage(bImg, bx0, by0, bW, bH)
       }
-      ctx.drawImage(bImg, w - bSize - 14, ground - bSize, bSize, bSize)
 
       // サメ
       const sH = 20

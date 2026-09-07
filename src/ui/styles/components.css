@@ -11,8 +11,8 @@
 }
 .panel-title {
   font-size: var(--fs-xs);
-  letter-spacing: 0.14em;
-  color: var(--c-text-mute);
+  letter-spacing: 0.18em;
+  color: var(--c-text-dim);
   text-transform: uppercase;
 }
 /*
@@ -70,10 +70,10 @@
   border-radius: var(--r-2);
   padding: var(--sp-2) var(--sp-4);
 }
-.hud-phase { font-size: var(--fs-xs); letter-spacing: 0.16em; color: var(--c-text-mute); }
-.hud-depth { font-size: var(--fs-lg); font-family: var(--font-num); }
-.hud-depth-name { color: var(--c-text-dim); font-size: var(--fs-xs); }
-.hud-timer { margin-left: auto; font-family: var(--font-num); font-size: var(--fs-xl); }
+.hud-phase { font-size: var(--fs-xs); letter-spacing: 0.16em; color: var(--c-text-dim); }
+.hud-depth { font-size: var(--fs-lg); font-family: var(--font-display); letter-spacing: 0.02em; }
+.hud-depth-name { color: var(--c-text-dim); font-size: var(--fs-xs); margin-left: var(--sp-2); }
+.hud-timer { margin-left: auto; font-family: var(--font-display); font-size: var(--fs-xl); letter-spacing: 0.04em; }
 .hud-timer[data-warn="true"] { color: var(--c-danger); }
 .speed { display: flex; gap: var(--sp-1); }
 .speed button {
@@ -183,7 +183,7 @@
   display: flex; flex-direction: column; gap: var(--sp-4);
   max-width: 760px; width: 100%;
 }
-.modal-title { font-size: var(--fs-lg); }
+.modal-title { font-size: var(--fs-lg); font-family: var(--font-display); letter-spacing: 0.02em; }
 .modal-sub { color: var(--c-text-dim); font-size: var(--fs-xs); }
 
 .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); }
@@ -243,12 +243,12 @@
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: var(--sp-1);
 }
-.ct-value { font-family: var(--font-num); font-size: var(--fs-xl); }
+.ct-value { font-family: var(--font-display); font-size: var(--fs-xl); }
 .ct-caption { color: var(--c-text-mute); font-size: var(--fs-xs); letter-spacing: 0.1em; }
 
 /* ---- 累計生産 ---- */
 .tally { display: flex; align-items: baseline; gap: var(--sp-2); }
-.tally-value { font-family: var(--font-num); font-size: var(--fs-lg); color: var(--c-shark); }
+.tally-value { font-family: var(--font-display); font-size: var(--fs-lg); color: var(--c-shark); }
 .tally-unit { color: var(--c-text-mute); font-size: var(--fs-xs); }
 .tally-species { margin-left: auto; color: var(--c-text-dim); font-size: var(--fs-xs); font-family: var(--font-num); }
 
@@ -294,7 +294,7 @@
   padding: var(--sp-4);
 }
 .lab-budget { display: flex; align-items: baseline; gap: var(--sp-2); }
-.lab-budget-value { font-family: var(--font-num); font-size: var(--fs-xl); color: var(--c-score); }
+.lab-budget-value { font-family: var(--font-display); font-size: var(--fs-xl); color: var(--c-score); }
 .lab-stats {
   display: flex; flex-direction: column; gap: 2px;
   color: var(--c-text-dim); font-size: var(--fs-xs); font-family: var(--font-num);
