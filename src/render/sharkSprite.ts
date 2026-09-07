@@ -162,11 +162,12 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     },
   },
   swarm: {
-    // 「ダブル」なので 2 体。名前と見た目を一致させる
-    transform: { count: 2, scale: 0.74 },
+    // 「ダブル」なので 2 体。名前と見た目を一致させる。
+    // 大きさは配置表側で決めるので、ここで枠を縮めない
+    transform: { count: 2 },
   },
   triple: {
-    transform: { count: 3, scale: 0.66 },
+    transform: { count: 3 },
   },
   giant: {
     transform: { scale: 1.5 },
@@ -446,7 +447,9 @@ function drawOne(
   const hasBase = asset('base') !== null
 
   if (hasBase) {
-    drawLayer(g, 'base', () => {})
+    // base.png だけは 96×44 なので、枠の中の本体位置に置く。
+    // 他のレイヤーは枠と同じ 128×72 なので (0,0) でよい。
+    g.drawImage(asset('base')!, BODY_X, BODY_Y)
     if (tail) {
       g.clearRect(BODY_X, BODY_Y, TAIL_W, BODY_H)
       drawLayer(g, `part/tail/${tail.id}`, tail.part.draw)
@@ -528,11 +531,16 @@ export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
   const placements =
     count === 1
       ? [{ x: 0, y: 0, s: 1 }]
-      : [
-          { x: -0.14, y: -0.13, s: 0.78 },
-          { x: 0.16, y: 0.12, s: 0.84 },
-          { x: 0.44, y: -0.03, s: 0.7 },
-        ].slice(0, count)
+      : count === 2
+        ? [
+            { x: -0.15, y: -0.11, s: 0.74 },
+            { x: 0.15, y: 0.11, s: 0.74 },
+          ]
+        : [
+            { x: -0.25, y: -0.13, s: 0.6 },
+            { x: 0.02, y: 0.07, s: 0.64 },
+            { x: 0.26, y: -0.05, s: 0.56 },
+          ]
 
   g.globalAlpha = alpha
   for (const p of placements) {
