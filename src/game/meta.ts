@@ -1,5 +1,5 @@
 import type { Config } from './config.ts'
-import { type Family, FAMILIES } from './mutations.ts'
+import { type Family, FAMILIES, type MutationId } from './mutations.ts'
 
 /**
  * 恒久強化。ラン終了時に得た研究予算で買い、次のラン以降に永続する。
@@ -444,6 +444,8 @@ export type TreeNode = {
   row: number
   /** すべて取得済みでないと購入できない */
   requires: string[]
+  /** 節に添えるサメ。何が解禁されるのかを絵で示す */
+  preview?: MutationId
 }
 
 export const TREE: TreeNode[] = [
@@ -475,10 +477,10 @@ export const TREE: TreeNode[] = [
   { id: 'prototype', branch: 'lab', col: 3, row: 3, requires: ['extraOffer'] },
 
   // 系統 — 変異プールの拡張
-  { id: 'family_abyss', branch: 'fam', col: 4, row: 0, requires: [] },
-  { id: 'family_mech', branch: 'fam', col: 4, row: 1, requires: ['family_abyss'] },
-  { id: 'family_cosmic', branch: 'fam', col: 4, row: 2, requires: ['family_mech'] },
-  { id: 'family_disaster', branch: 'fam', col: 4, row: 3, requires: ['family_cosmic'] },
+  { id: 'family_abyss', branch: 'fam', col: 4, row: 0, requires: [], preview: 'tentacle' },
+  { id: 'family_mech', branch: 'fam', col: 4, row: 1, requires: ['family_abyss'], preview: 'mecha' },
+  { id: 'family_cosmic', branch: 'fam', col: 4, row: 2, requires: ['family_mech'], preview: 'alien' },
+  { id: 'family_disaster', branch: 'fam', col: 4, row: 3, requires: ['family_cosmic'], preview: 'tornado' },
 
   // 運用 — ここだけ枝分かれする
   { id: 'speed2', branch: 'ops', col: 5, row: 0, requires: [] },

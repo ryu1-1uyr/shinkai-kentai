@@ -4,6 +4,7 @@ import { LabScreen } from './components/LabScreen.tsx'
 import { useAtmosphere } from './useAtmosphere.ts'
 import { useGame } from './useGame.ts'
 import { DebugPanel } from './components/DebugPanel.tsx'
+import { DepthFlash } from './components/DepthFlash.tsx'
 import { DraftOverlay } from './components/DraftOverlay.tsx'
 import { HUD } from './components/HUD.tsx'
 import { InvasionPanel } from './components/InvasionPanel.tsx'
@@ -36,6 +37,7 @@ export function App() {
       <StockPanel />
       <DraftOverlay />
       <ResultOverlay />
+      <DepthFlash />
       <DebugPanel />
     </div>
   )

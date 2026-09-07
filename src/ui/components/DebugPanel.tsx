@@ -20,6 +20,7 @@ export function DebugPanel() {
   const s = useGame()
   const [open, setOpen] = useState(false)
   const [lab, setLab] = useState(false)
+  const [confirmWipe, setConfirmWipe] = useState(false)
   const meta = getMeta()
 
   if (!import.meta.env.DEV) return null
@@ -51,7 +52,17 @@ export function DebugPanel() {
         <button onClick={debugSkipCulture}>培養フェーズを飛ばす</button>
         <button onClick={debugEndRun}>ランを終了</button>
         <button onClick={() => setLab(true)}>スプライト合成を確認</button>
-        <button onClick={wipeMeta}>メタをリセット</button>
+        {/* 取り消せない操作なので一度確認を挟む */}
+        {confirmWipe ? (
+          <>
+            <button className="dbg-danger" onClick={() => { wipeMeta(); setConfirmWipe(false) }}>
+              本当に削除する
+            </button>
+            <button onClick={() => setConfirmWipe(false)}>やめる</button>
+          </>
+        ) : (
+          <button onClick={() => setConfirmWipe(true)}>セーブデータを削除</button>
+        )}
       </div>
     </div>
     </>

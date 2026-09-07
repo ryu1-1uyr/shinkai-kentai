@@ -11,7 +11,9 @@ import {
   NUMERIC_BY_ID,
   TREE,
 } from '../../game/meta.ts'
+import { MUTATION_BY_ID, maskOf } from '../../game/mutations.ts'
 import { getMeta, purchaseNode, startNewRun } from '../../store/gameStore.ts'
+import { SharkIcon } from './SharkIcon.tsx'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
 
@@ -20,7 +22,7 @@ import { useGame } from '../useGame.ts'
  * meta は中身を書き換えて使い回しているため参照が変わらず、
  * 計測側の依存配列に入れても購入のたびには走らない。
  */
-type Line = { x1: number; y1: number; x2: number; y2: number; from: string }
+type Line = { x1: number; y1: number; x2: number; y2: number; from: string; branch: string }
 
 export function LabScreen() {
   useGame()
@@ -50,6 +52,7 @@ export function LabScreen() {
           x2: cb.left + cb.width / 2 - base.left,
           y2: cb.top - base.top,
           from: r,
+          branch: n.branch,
         })
       }
     }
@@ -119,6 +122,7 @@ export function LabScreen() {
               key={i}
               className="wire"
               data-on={nodeTaken(meta, l.from)}
+              data-branch={l.branch}
               d={`M ${l.x1} ${l.y1} C ${l.x1} ${(l.y1 + l.y2) / 2}, ${l.x2} ${(l.y1 + l.y2) / 2}, ${l.x2} ${l.y2}`}
             />
           ))}
@@ -149,6 +153,11 @@ export function LabScreen() {
               disabled={!buyable}
               onClick={() => purchaseNode(n.id)}
             >
+              {n.preview && (
+                <span className="node-preview">
+                  <SharkIcon mask={maskOf(MUTATION_BY_ID.get(n.preview)!)} height={30} />
+                </span>
+              )}
               <span className="node-name">
                 {nodeName(n.id)}
                 {numeric && (
@@ -159,7 +168,8 @@ export function LabScreen() {
               </span>
               <span className="node-detail">{nodeDetail(meta, n.id)}</span>
               <span className="node-cost">
-                {cost === null ? (numeric ? 'MAX' : '取得済み') : fmt(cost)}
+                {taken && !numeric && <span className="node-mark">取得済み</span>}
+                {cost === null ? (numeric ? 'MAX' : '') : fmt(cost)}
               </span>
             </button>
           )
