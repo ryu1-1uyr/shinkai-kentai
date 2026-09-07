@@ -164,6 +164,55 @@ export const UNLOCKS: UnlockDef[] = [
     kind: 'qol',
   },
   {
+    id: 'reroll',
+    name: '再実験',
+    detail: 'ドラフトを 1 ラン に 1 回だけ引き直せる',
+    cost: 1500,
+    kind: 'unique',
+  },
+  {
+    id: 'earlyDraft',
+    name: '早期実験',
+    detail: '最初のドラフトが累計 10 体で訪れる（通常は 50 体）',
+    cost: 2200,
+    kind: 'unique',
+  },
+  {
+    id: 'lastStand',
+    name: '緊急浮上',
+    detail: 'ラン終了時、在庫の検体をすべて投入してから終わる',
+    cost: 2800,
+    kind: 'unique',
+  },
+  {
+    id: 'reservePower',
+    name: '予備電源',
+    detail: '制限時間が尽きた瞬間、1 ラン に 1 回だけ +20 秒',
+    cost: 4000,
+    kind: 'unique',
+  },
+  {
+    id: 'extraOffer',
+    name: '追加検体枠',
+    detail: 'ドラフトの提示が 3 枚から 4 枚になる',
+    cost: 5000,
+    kind: 'unique',
+  },
+  {
+    id: 'chainCollapse',
+    name: '連鎖崩壊',
+    detail: '建物を破壊した際の余剰ダメージが、次の建物に 2 倍で通る',
+    cost: 7000,
+    kind: 'unique',
+  },
+  {
+    id: 'prototype',
+    name: '試作認可',
+    detail: '突然変異のランク上限が 3 から 4 になる',
+    cost: 20000,
+    kind: 'unique',
+  },
+  {
     id: 'feederSynergy',
     name: '給餌連動',
     detail: '給餌装置 1 個につき培養液の生産 +3%',
@@ -212,6 +261,21 @@ export type MetaEffects = {
   autoClick: number
   /** 給餌装置の数に応じて培養液生産が伸びる。建物数に依存するため tick 側で適用する */
   feederSynergy: boolean
+
+  /** 最初のドラフトが早く訪れる */
+  earlyDraft: boolean
+  /** ドラフトの提示枚数への加算 */
+  extraOffers: number
+  /** 1 ラン に使えるドラフトの引き直し回数 */
+  rerolls: number
+  /** 変異のランク上限 */
+  maxRank: number
+  /** 制限時間切れを 1 回だけ猶予する秒数。0 なら無効 */
+  reserveSeconds: number
+  /** 建物破壊時の余剰ダメージ倍率 */
+  overkillMult: number
+  /** ラン終了時に在庫をすべて投入する */
+  lastStand: boolean
 }
 
 export function metaEffects(m: MetaState): MetaEffects {
@@ -240,6 +304,13 @@ export function metaEffects(m: MetaState): MetaEffects {
     autoBuyAll: has('autoBuyAll'),
     autoClick: has('autoClick') ? 5 : 0,
     feederSynergy: has('feederSynergy'),
+    earlyDraft: has('earlyDraft'),
+    extraOffers: has('extraOffer') ? 1 : 0,
+    rerolls: has('reroll') ? 1 : 0,
+    maxRank: has('prototype') ? 4 : 3,
+    reserveSeconds: has('reservePower') ? 20 : 0,
+    overkillMult: has('chainCollapse') ? 2 : 1,
+    lastStand: has('lastStand'),
   }
 }
 

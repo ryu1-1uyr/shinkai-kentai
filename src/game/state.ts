@@ -47,6 +47,10 @@ export type GameState = {
 
   /** 恒久強化の効果。ラン中は変化しない */
   meta: MetaEffects
+  /** 残りの引き直し回数 */
+  rerollsLeft: number
+  /** 予備電源を使ったか */
+  reserveUsed: boolean
 }
 
 export function createState(cfg: Config, seed: number, meta?: MetaEffects): GameState {
@@ -62,7 +66,7 @@ export function createState(cfg: Config, seed: number, meta?: MetaEffects): Game
     ranks: new Map<MutationId, number>(),
     birthDist: [[0, 1]],
     producedTotal: 0,
-    nextDraftAt: cfg.mutation.draftThresholdBase,
+    nextDraftAt: eff.earlyDraft ? 10 : cfg.mutation.draftThresholdBase,
     draftCount: 0,
     pendingOffers: null,
     depth: 1,
@@ -74,6 +78,8 @@ export function createState(cfg: Config, seed: number, meta?: MetaEffects): Game
     score: 0,
     rngState: seed >>> 0,
     meta: eff,
+    rerollsLeft: eff.rerolls,
+    reserveUsed: false,
   }
 
   // 恒久強化ぶんの初期値を積む

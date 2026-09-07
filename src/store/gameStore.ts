@@ -9,7 +9,7 @@ import {
   metaEffects,
 } from '../game/meta.ts'
 import { createState, type GameState } from '../game/state.ts'
-import { applyDraft, clickValue, tick } from '../game/tick.ts'
+import { applyDraft, clickValue, rerollDraft, tick } from '../game/tick.ts'
 import { loadMeta, resetMeta, saveMeta } from '../meta/save.ts'
 
 /**
@@ -183,6 +183,10 @@ export function buy(index: number): void {
   state.culture -= cost
   state.buildings[index] += 1
   emit()
+}
+
+export function reroll(): void {
+  if (rerollDraft(state, cfg)) emit()
 }
 
 export function chooseDraft(index: number): void {

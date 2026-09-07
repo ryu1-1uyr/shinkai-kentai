@@ -325,3 +325,27 @@
 }
 .buy-auto:hover { border-color: var(--c-line-hi); color: var(--c-text); }
 .buy-auto[data-on="true"] { color: var(--c-culture); border-color: var(--c-culture); }
+
+/* ---- 引き直し / 予備電源 ---- */
+.reroll {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px dashed var(--c-line-hi);
+  border-radius: var(--r-1);
+  color: var(--c-text-dim);
+  padding: var(--sp-1) var(--sp-3);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+.reroll:hover { color: var(--c-text); border-color: var(--c-text-dim); }
+
+.reserve {
+  font-size: var(--fs-xs);
+  font-family: var(--font-num);
+  color: var(--c-score);
+  border: 1px solid var(--c-score);
+  border-radius: var(--r-1);
+  padding: 2px var(--sp-2);
+}
+.reserve[data-spent="true"] { color: var(--c-text-mute); border-color: var(--c-line); }

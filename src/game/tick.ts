@@ -1,6 +1,6 @@
 import type { Config } from './config.ts'
 import { BUILDINGS } from './buildings.ts'
-import { addSharks, launchWeakest } from './inventory.ts'
+import { addSharks, launchWeakest, totalSharks } from './inventory.ts'
 import { MUTATIONS, type MutationDef, type MutationId, offerWeight } from './mutations.ts'
 import { type GameState, refreshBirthDist, rng } from './state.ts'
 import { bossHp, perDepthTime, targetCount, targetHp } from './targets.ts'
@@ -55,11 +55,11 @@ export function launchRate(s: GameState, cfg: Config): number {
  */
 function rollOffers(s: GameState, cfg: Config): MutationDef[] {
   const pool = MUTATIONS.filter(
-    (m) => s.meta.families.has(m.family) && (s.ranks.get(m.id) ?? 0) < cfg.mutation.maxRank,
+    (m) => s.meta.families.has(m.family) && (s.ranks.get(m.id) ?? 0) < s.meta.maxRank,
   )
   const offers: MutationDef[] = []
   const picked = new Set<MutationId>()
-  const size = Math.min(cfg.mutation.draftSize, pool.length)
+  const size = Math.min(cfg.mutation.draftSize + s.meta.extraOffers, pool.length)
   while (offers.length < size) {
     const avail = pool.filter((m) => !picked.has(m.id))
     let total = 0
@@ -93,8 +93,13 @@ function beginDepth(s: GameState, cfg: Config): void {
   }
 }
 
-/** 現在の標的が壊れたときの遷移。余剰ダメージは次の標的へ持ち越す */
-function advanceTarget(s: GameState, cfg: Config, overkill: number): number {
+/**
+ * 現在の標的が壊れたときの遷移。余剰ダメージは次の標的へ持ち越す。
+ * mult は連鎖崩壊の倍率で、1 回の投入につき最初の 1 回だけ 2 になる。
+ * 破壊のたびに倍率を掛けると 2 のべき乗で暴走し、HP の伸び（深度あたり 5 倍）を
+ * 一瞬で突き抜けてしまうため、連鎖はさせない。
+ */
+function advanceTarget(s: GameState, cfg: Config, overkill: number, mult: number): number {
   if (s.onBoss) {
     // 深度突破
     s.clearedDepth += 1
@@ -103,7 +108,7 @@ function advanceTarget(s: GameState, cfg: Config, overkill: number): number {
     }
     s.depth += 1
     beginDepth(s, cfg)
-    return overkill
+    return overkill * mult
   }
   s.destroyed += 1
   if (s.destroyed >= targetCount(s.depth, cfg)) {
@@ -112,7 +117,7 @@ function advanceTarget(s: GameState, cfg: Config, overkill: number): number {
   } else {
     s.currentHp = targetHp(s.depth, cfg)
   }
-  return overkill
+  return overkill * mult
 }
 
 export function tick(s: GameState, input: TickInput, cfg: Config): void {
@@ -162,7 +167,27 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
   // --- 侵略 ---
   const n = launchRate(s, cfg) * dt
   const { damage } = launchWeakest(s.inv, n, s.ranks, cfg)
+  applyDamage(s, cfg, damage)
+
+  // --- タイマー ---
+  s.timeLeft -= dt
+  if (s.timeLeft <= 0) {
+    if (s.meta.reserveSeconds > 0 && !s.reserveUsed) {
+      // 予備電源。逆探知の完了を 1 回だけ遅らせる
+      s.reserveUsed = true
+      s.timeLeft += s.meta.reserveSeconds
+    } else {
+      if (s.meta.lastStand) finalVolley(s, cfg)
+      s.phase = 'over'
+      s.endReason = 'timeout'
+    }
+  }
+}
+
+/** 与えたダメージを標的に通す。破壊したら余剰を次の標的へ持ち越す */
+function applyDamage(s: GameState, cfg: Config, damage: number): void {
   let dmg = damage
+  let chained = false
   let guard = 0
   while (dmg > 0 && guard++ < 1000) {
     if (dmg < s.currentHp) {
@@ -172,16 +197,27 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
     } else {
       s.score += s.currentHp
       const over = dmg - s.currentHp
-      dmg = advanceTarget(s, cfg, over)
+      const mult = chained ? 1 : s.meta.overkillMult
+      chained = true
+      dmg = advanceTarget(s, cfg, over, mult)
     }
   }
+}
 
-  // --- タイマー ---
-  s.timeLeft -= dt
-  if (s.timeLeft <= 0) {
-    s.phase = 'over'
-    s.endReason = 'timeout'
-  }
+/** 緊急浮上。ラン終了の瞬間に在庫の検体をすべて投入する */
+function finalVolley(s: GameState, cfg: Config): void {
+  const all = totalSharks(s.inv)
+  if (all <= 0) return
+  const { damage } = launchWeakest(s.inv, all, s.ranks, cfg)
+  applyDamage(s, cfg, damage)
+}
+
+/** 提示中のドラフトを引き直す。1 ラン に使える回数は恒久強化で決まる */
+export function rerollDraft(s: GameState, cfg: Config): boolean {
+  if (!s.pendingOffers || s.rerollsLeft <= 0) return false
+  s.rerollsLeft -= 1
+  s.pendingOffers = rollOffers(s, cfg)
+  return true
 }
 
 /** 提示中のドラフトから 1 枚選んで確定する */

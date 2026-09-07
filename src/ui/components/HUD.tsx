@@ -21,7 +21,7 @@ export function HUD() {
         </div>
       </div>
 
-      <div className="speed">
+      <div className="speed" style={{ marginRight: "auto" }}>
         {SPEEDS.filter((v) => v <= s.meta.maxSpeed).map((v) => (
           <button key={v} data-active={speed === v} onClick={() => setSpeed(v)}>
             ×{v}
@@ -33,6 +33,12 @@ export function HUD() {
           </button>
         )}
       </div>
+
+      {s.meta.reserveSeconds > 0 && (
+        <span className="reserve" data-spent={s.reserveUsed}>
+          予備電源 {s.reserveUsed ? '使用済み' : `+${s.meta.reserveSeconds}s`}
+        </span>
+      )}
 
       <div className="hud-timer" data-warn={!inCulture && s.timeLeft <= 15}>
         {mmss(inCulture ? 60 - s.t : s.timeLeft)}

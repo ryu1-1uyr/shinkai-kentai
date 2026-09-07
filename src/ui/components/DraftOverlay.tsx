@@ -1,5 +1,5 @@
 import { powerAt, rateAt } from '../../game/mutations.ts'
-import { chooseDraft, getConfig } from '../../store/gameStore.ts'
+import { chooseDraft, getConfig, reroll } from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
 import { Sprite } from './Sprite.tsx'
@@ -27,6 +27,12 @@ export function DraftOverlay() {
             以降に生まれる検体にのみ発現する（在庫の個体は変異しない）
           </div>
         </div>
+
+        {s.rerollsLeft > 0 && (
+          <button className="reroll" onClick={reroll}>
+            ↻ 引き直す（残り {s.rerollsLeft} 回）
+          </button>
+        )}
 
         <div className="cards">
           {offers.map((m, i) => {
