@@ -7,6 +7,7 @@ import {
   type MutationDef,
   type MutationId,
   type MutationMask,
+  maskOf,
   nameOfMask,
   offerWeight,
   powerOfMask,
@@ -182,7 +183,12 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
       s.births.set(mask, after)
       // 1 体目が生まれた瞬間だけ、珍しい個体を記録に残す
       if (before < 1 && after >= 1 && isNotable(mask)) {
-        pushLog(s, 'birth', `${nameOfMask(mask)} が誕生  戦闘力 ${Math.round(powerOfMask(mask, s.ranks, cfg))}`)
+        pushLog(
+          s,
+          'birth',
+          `${nameOfMask(mask)}  戦闘力 ${Math.round(powerOfMask(mask, s.ranks, cfg))}`,
+          mask,
+        )
       }
     }
   }
@@ -277,7 +283,7 @@ export function applyDraft(s: GameState, cfg: Config, index: number): void {
   const chosen = offers[Math.max(0, Math.min(index, offers.length - 1))]
   s.ranks.set(chosen.id, (s.ranks.get(chosen.id) ?? 0) + 1)
   refreshBirthDist(s, cfg)
-  pushLog(s, 'draft', `${chosen.name} を確認  R${s.ranks.get(chosen.id)}`)
+  pushLog(s, 'draft', `${chosen.name} を確認  R${s.ranks.get(chosen.id)}`, maskOf(chosen))
   s.draftCount += 1
   s.nextDraftAt += cfg.mutation.draftThresholdBase * Math.pow(cfg.mutation.draftThresholdGrowth, s.draftCount)
   s.pendingOffers = null

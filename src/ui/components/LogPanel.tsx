@@ -1,5 +1,6 @@
 import type { GameState } from '../../game/state.ts'
 import { mmss } from '../format.ts'
+import { SharkIcon } from './SharkIcon.tsx'
 
 /**
  * 観測記録。培養フェーズと侵略フェーズの両方で使う。
@@ -26,6 +27,11 @@ export function LogPanel({
           {s.log.slice(0, limit).map((e, i) => (
             <li key={`${e.t}-${i}`} className="log-row" data-kind={e.kind}>
               <span className="log-time">{mmss(e.t)}</span>
+              {e.mask !== undefined && (
+                <span className="log-icon">
+                  <SharkIcon mask={e.mask} height={22} />
+                </span>
+              )}
               <span className="log-text">{e.text}</span>
             </li>
           ))}

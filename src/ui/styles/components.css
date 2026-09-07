@@ -576,6 +576,7 @@
 .log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .log-row {
   display: flex;
+  align-items: center;
   gap: var(--sp-3);
   font-size: var(--fs-xs);
   padding: 2px 0;
@@ -585,6 +586,15 @@
 }
 .log-time { font-family: var(--font-num); color: var(--c-text-mute); flex: 0 0 auto; }
 .log-text { color: var(--c-text-dim); }
+/* サメを添える行だけ高さが出るので、幅を固定して行頭を揃える */
+.log-icon {
+  flex: 0 0 auto;
+  width: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+.log-icon canvas { image-rendering: pixelated; }
 .log-row[data-kind='hit'] { border-left-color: var(--c-line-hi); }
 .log-row[data-kind='boss'] { border-left-color: var(--c-boss); }
 .log-row[data-kind='boss'] .log-text { color: var(--c-boss); }

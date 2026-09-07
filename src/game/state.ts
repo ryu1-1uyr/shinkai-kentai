@@ -7,13 +7,14 @@ import { type MutationDef, type MutationId, type MutationMask, type MutationRank
 export type Phase = 'culture' | 'invasion' | 'over'
 
 export type LogKind = 'hit' | 'boss' | 'depth' | 'draft' | 'system' | 'birth'
-export type LogEntry = { t: number; kind: LogKind; text: string }
+/** mask を持つ行は、その組み合わせのサメを添えて表示する */
+export type LogEntry = { t: number; kind: LogKind; text: string; mask?: MutationMask }
 
 /** ログの保持件数。表示に使うぶんだけあればよい */
 const LOG_LIMIT = 40
 
-export function pushLog(s: GameState, kind: LogKind, text: string): void {
-  s.log.unshift({ t: s.t, kind, text })
+export function pushLog(s: GameState, kind: LogKind, text: string, mask?: MutationMask): void {
+  s.log.unshift({ t: s.t, kind, text, mask })
   if (s.log.length > LOG_LIMIT) s.log.length = LOG_LIMIT
 }
 export type EndReason = 'timeout' | 'running'
