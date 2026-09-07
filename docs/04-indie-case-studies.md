@@ -1,0 +1,147 @@
+# 個人開発の事例
+
+## 1. 数字で見る成功例
+
+| タイトル | 開発者 | 規模 | 開発期間 |
+|---|---|---|---|
+| **Stardew Valley** | Eric Barone | 2026 年 2 月時点で **5,000 万本超** | **4.5 年 / 1 日 10 時間** |
+| **Vampire Survivors** | Luca Galante | **2,700 万人超** のプレイヤー | — |
+| **Undertale** | Toby Fox | — | — |
+
+ただし出典は釘を刺している。
+
+> Eric Barone は 4.5 年、1 日 10 時間を Stardew Valley に費やした。**それは例外である。**
+> 完成させる個人開発者の多くは、本業と並行して 1〜2 年、
+> **スコープを絞ることで**完成させている。
+
+## 2. 見積もりと持続性
+
+繰り返し出てきた実務的な助言。
+
+- **見積もりを 3 倍にする。**
+  1 日で終わると思う機能には 3 日を見込む
+- **時間を決めて止める。**
+  1 日 2〜3 時間、週 5 日。これなら何年も続けられる
+- **締切を切る。**
+  前述のインクリメンタル開発者は
+  「締切を切らなかったことが最大の失敗、圧倒的に」と書いている
+
+## 3. マーケティングとウィッシュリスト
+
+- Steam で突き抜けるゲームには、**ほぼ必ず発売前にマーケティングへ投資した開発者がいる**
+- **ウィッシュリストが初週の売上を予測する**
+- ウィッシュリストは、何ヶ月もかけて人にゲームを見せることで積み上がる
+
+## 4. ジャンルのタイミング
+
+Vampire Survivors の爆発は **Survivorlike という新ジャンルを生んだ**。
+
+> 2022 年に survivor-like をリリースしていれば、
+> 新しくて人気があり、**競合が少ない**ジャンルに投入できたことになる。
+
+新ジャンルの立ち上がり期に入ることの価値、という観点。
+
+## 5. Vampire Survivors の設計を分解する
+
+本作と構造が最も近いので、詳しく見る。
+
+### コアループ
+
+**各セッションは、攻撃 1 つだけの脆弱なキャラクターから始まる。**
+経験値の宝石を集めてレベルアップし、止められない存在に変わっていく。
+この 1 ランの中で完結する**パワーファンタジー**が中核。
+
+### 動詞を 1 つに絞る
+
+> ゲームは**単一の動詞「移動」**の周りに全てを構築している。
+> 手動の照準がなく、攻撃のタイミングもなく、複雑な入力もない。
+> この選択が、位置取りと敵の波に全ての重みを担わせ、
+> **一歩一歩を意味のあるものにしている。**
+
+### 報酬の密度
+
+> Vampire Survivors は数秒に一度は何か良いことが起こさせずにおかない。
+> 敵は経験値を落とし、レベルアップは選択肢を差し出し、宝箱は強化を吐き出す。
+
+### 緊張と弛緩
+
+**圧倒できる時間**と**大群が現れて緊張が高まる時間**を交互に置き、
+パワーと難度を釣り合わせている。
+
+### メタ進行
+
+ラン中に金貨を集め、メインメニューで PowerUp に使い、開始時のステータスを上げる。
+**個々の増分は小さいが、積み上がると劇的な差になる。**
+
+### ビルドの多様性
+
+多様な武器とアイテムを組み合わせて強力なシナジーを作れる。
+戦略的な判断がプレイを新鮮に保っている。
+
+---
+
+## この企画への当てはめ
+
+### 構造の一致
+
+Vampire Survivors と本作は、驚くほど構造が近い。
+
+| 要素 | Vampire Survivors | 深海検体増殖計画 |
+|---|---|---|
+| ラン内のパワーファンタジー | 脆弱 → 無双 | 手クリック → 数千体の群れ |
+| 単一の動詞 | 移動 | **クリック（と購入）** |
+| 自動戦闘 | 攻撃は自動 | 出撃は自動 |
+| ラン中のドラフト | レベルアップで 3 択 | 突然変異で 3〜4 択 |
+| ビルドのシナジー | 武器の組み合わせ | **変異の乗算と複合サメ** |
+| メタ進行 | 金貨 → PowerUp | 研究予算 → スキルツリー |
+| 敗北の扱い | どのランも無駄にならない | 削ったぶんは戦果になる |
+| 時間制限 | 30 分 | 3〜8 分 |
+
+**すでに正しい構造の上に立っている**と考えてよい。
+
+### 学べる差分
+
+1. **報酬の密度が足りない。**
+   VS は「数秒に一度」。本作は培養フェーズ 60 秒に山がない。
+   ここが最も明確な差分
+2. **緊張と弛緩の波がない。**
+   VS は圧倒する時間と押される時間を交互に置く。
+   本作は深度が上がるほど単調に苦しくなるだけで、**弛緩の時間が設計されていない**。
+   深度を突破した直後の数秒だけ圧倒的に有利になる、といった波を作る余地がある
+3. **単一の動詞を徹底しきれていない。**
+   VS の「移動だけ」に対し、本作は「クリック」と「購入」の 2 つ。
+   購入は意思決定として重要なので減らすべきではないが、
+   **クリックの側にもっと重みを載せる**余地はある
+   （いまクリックは序盤しか効かない）
+4. **ラン内のパワーファンタジーの可視化。**
+   VS は画面が敵と弾で埋まっていく。
+   本作は突撃ビュワーがそれに当たるが、**数字の桁が上がる快感の可視化**が弱い
+
+### 開発運営として
+
+- **締切を切る。** この企画にはまだ締切がない。先人の「最大の失敗」に当たっている
+- **見積もりを 3 倍。** 残タスクの見積もりを立てるときの係数として使う
+- **スコープを絞る。** 変異 30 種、系統 5 つ、恒久強化 28 ノード。
+  すでに個人開発としては大きい。**これ以上広げる前に、深さで勝負する**判断が要る
+- **ウィッシュリスト**は Steam 前提の話なので Web 公開なら直接は当てはまらないが、
+  「何ヶ月も人に見せる」という部分は Web でも同じ
+
+### ジャンルのタイミングについて
+
+**インクリメンタル × ローグライト × B 級サメ映画**という組み合わせは、
+少なくともよくある組み合わせではない。
+Survivorlike ほどの追い風はないが、
+**題材の独自性は差別化として機能しうる**（複合サメの自動命名がその中核）。
+
+---
+
+## 出典
+
+- [Solo Developer Success Stories — Indie Game World](https://indiegameworld.com/features/solo-developer-success-stories-gamings-most-impressive-one-person-projects/)
+- [How Long Does It Take to Make an Indie Game? Real Timelines — Steam Page Analyzer](https://www.steampageanalyzer.com/blog/how-long-does-it-take-to-make-an-indie-game)
+- [Famous Indie Game Development Budgets: 12 Documented Examples — Steam Page Analyzer](https://www.steampageanalyzer.com/blog/famous-indie-game-development-budgets)
+- [The Indie Survival Guide to Game Marketing](https://opgamemarketing.substack.com/p/the-indie-survival-guide-to-game)
+- [The Last Humble Bee postmortem: Staying sane in solo development — Game Developer](https://www.gamedeveloper.com/business/the-last-humble-bee-postmortem-staying-sane-in-solo-development)
+- [Vampire Survivors Design Analysis: How Power Fantasy Creates Addictive Gameplay — Kokutech](https://www.kokutech.com/blog/gamedev/design-patterns/power-fantasy/vampire-survivors)
+- [The Secret Sauce of Vampire Survivors](https://jboger.substack.com/p/the-secret-sauce-of-vampire-survivors)
+- [The Addictive Nature of Vampire Survivors — Nat Rowley](https://www.natrowley.com/the-addictive-nature-of-vampire-survivors/)
