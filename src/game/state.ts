@@ -24,7 +24,7 @@ export type Phase = 'culture' | 'invasion' | 'over'
 export type PendingDraft =
   { kind: 'mutation'; offers: MutationDef[] } | { kind: 'policy'; offers: PolicyDef[] }
 
-export type LogKind = 'hit' | 'boss' | 'depth' | 'draft' | 'policy' | 'system' | 'birth'
+export type LogKind = 'hit' | 'boss' | 'depth' | 'draft' | 'policy' | 'system' | 'birth' | 'record'
 /** mask を持つ行は、その組み合わせのサメを添えて表示する */
 export type LogEntry = { t: number; kind: LogKind; text: string; mask?: MutationMask }
 

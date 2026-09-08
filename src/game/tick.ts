@@ -30,6 +30,9 @@ export type TickInput = {
  */
 const LOG_RECORD_FROM = 7
 
+/** 変異が増えたあと、記録に残すのに必要な変異数（取得済みの数からの引き算） */
+const LOG_TRAIT_SLACK = 3
+
 /** その mask が持つ変異の数 */
 function traitCount(mask: MutationMask): number {
   let n = 0
@@ -256,12 +259,21 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
         /*
          * 変異が少ないうちは「レアを含む 3 変異」で拾う。記録がまだ空で、
          * 新種が出ること自体が主役だから。
-         * 変異が増えるとその条件は当たり前になるので、
-         * **このランで最多の変異を持つ個体が出たとき**だけに切り替える。
-         * 自己ベストの更新なので、変異を何種取っていても件数が暴れない。
+         *
+         * 変異が増えるとその条件は当たり前になる（実測で 1 ラン 1300 件）ので、
+         * **取得済みの変異をほぼ全部載せた個体**に絞る。
+         * そのうえで、このランで最多の変異を持つ個体が出たときは別扱いにして
+         * 記録の見た目を変える。自己ベストの更新なので、
+         * 変異を何種取っていても件数が暴れない。
          */
-        const notable = s.ranks.size < LOG_RECORD_FROM ? isNotable(mask) : record && traits >= 3
-        if (notable) pushLog(s, 'birth', `${nameOfMask(mask)} が誕生`, mask)
+        const owned = s.ranks.size
+        if (owned < LOG_RECORD_FROM) {
+          if (isNotable(mask)) pushLog(s, 'birth', `${nameOfMask(mask)} が誕生`, mask)
+        } else if (record && traits >= 3) {
+          pushLog(s, 'record', `より強力なサメ ${nameOfMask(mask)} が誕生`, mask)
+        } else if (traits >= owned - LOG_TRAIT_SLACK) {
+          pushLog(s, 'birth', `${nameOfMask(mask)} が誕生`, mask)
+        }
       }
     }
   }

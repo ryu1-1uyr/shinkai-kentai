@@ -1279,6 +1279,19 @@
 .log-row[data-kind='birth'] .log-text {
   color: var(--c-legendary);
 }
+/* 自己ベストを更新した個体。誕生ログのなかでここだけ強調する */
+.log-row[data-kind='record'] {
+  border-left-color: var(--c-legendary);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--c-legendary) 14%, transparent),
+    transparent 70%
+  );
+}
+.log-row[data-kind='record'] .log-text {
+  color: var(--c-legendary);
+  font-weight: 700;
+}
 .log-row[data-kind='system'] {
   border-left-color: var(--c-danger);
 }
