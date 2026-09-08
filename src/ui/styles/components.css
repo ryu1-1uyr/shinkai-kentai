@@ -8,6 +8,7 @@
   flex-direction: column;
   gap: var(--sp-2);
   min-height: 0;
+  min-width: 0;
 }
 .panel-title {
   font-size: var(--fs-xs);
@@ -343,13 +344,23 @@
   flex-direction: column;
   gap: var(--sp-2);
 }
+/*
+ * 標的名と残り HP は同じ行に並ぶ。HP は 1.00M → 999k と桁が変わるたびに
+ * 幅が動くので、収まらなくなった瞬間だけ名前が折り返して段の高さが変わる。
+ * 高さを固定するため、どちらも折り返さない。
+ */
 .target-head {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
+  flex-wrap: nowrap;
 }
 .target-name {
   font-size: var(--fs-md);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .target-name[data-boss='true'] {
   color: var(--c-boss);
@@ -374,15 +385,26 @@
   font-size: var(--fs-xs);
   color: var(--c-text-dim);
   margin-left: auto;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
+/*
+ * 標的の残り数。点の数は深度が上がるごとに 2 つずつ増える（深度 24 で 55 個）。
+ *
+ * 折り返すと段の高さが変わり、下にあるビュワーと観測記録がまとめてずれる。
+ * 深度が数秒ごとに上がる終盤では、そのたびに画面が跳ねて読めなくなるので、
+ * **折り返さずに点のほうを縮めて 1 行に収める**。
+ */
 .progress-dots {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 3px;
 }
 .dot {
   width: 9px;
   height: 9px;
+  flex: 0 1 auto;
+  min-width: 2px;
   border-radius: 2px;
   background: var(--c-line);
 }
@@ -392,6 +414,8 @@
 .dot[data-boss='true'] {
   background: var(--c-boss);
   width: 16px;
+  /* 縮んでも通常の点と見分けがつく太さは残す */
+  min-width: 6px;
 }
 .launch-info {
   display: flex;
@@ -399,6 +423,7 @@
   color: var(--c-text-dim);
   font-size: var(--fs-xs);
   font-family: var(--font-num);
+  white-space: nowrap;
 }
 .idle-note {
   color: var(--c-text-mute);

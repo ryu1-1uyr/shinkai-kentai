@@ -89,17 +89,25 @@ body::after {
 .area-hud {
   grid-area: hud;
 }
+/*
+ * min-width を 0 にしておかないと、列の最小幅が中身の min-content になる。
+ * 標的の点は深度 24 で 55 個並ぶので、中央の列が押し広げられて
+ * 左右の列を潰しにかかる。縦（min-height）と同じ理由。
+ */
 .area-produce {
   grid-area: produce;
   min-height: 0;
+  min-width: 0;
 }
 .area-invasion {
   grid-area: invasion;
   min-height: 0;
+  min-width: 0;
 }
 .area-stock {
   grid-area: stock;
   min-height: 0;
+  min-width: 0;
 }
 
 .col {
