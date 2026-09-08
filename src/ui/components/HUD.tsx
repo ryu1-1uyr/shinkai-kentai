@@ -7,6 +7,7 @@ import {
   type Speed,
 } from '../../store/gameStore.ts'
 import { depthName } from '../../game/targets.ts'
+import { fill, t } from '../../text/index.ts'
 import { mmss } from '../format.ts'
 import { useGame } from '../useGame.ts'
 
@@ -20,18 +21,18 @@ export function HUD() {
   const autoMode = getAutoBuyMode()
   // 解禁したモードだけを並べる。1 つしかないなら切り替える意味がないので出さない
   const autoModes: Array<[AutoBuyMode, string]> = [
-    ['off', '手動'],
-    ...(s.meta.autoBuyOne ? ([['one', '定期発注']] as Array<[AutoBuyMode, string]>) : []),
-    ...(s.meta.autoBuyAll ? ([['all', 'AI 発注']] as Array<[AutoBuyMode, string]>) : []),
+    ['off', t.speed.manual],
+    ...(s.meta.autoBuyOne ? ([['one', t.speed.autoBuyOne]] as Array<[AutoBuyMode, string]>) : []),
+    ...(s.meta.autoBuyAll ? ([['all', t.speed.autoBuyAll]] as Array<[AutoBuyMode, string]>) : []),
   ]
 
   return (
     <div className="hud">
       <div>
-        <div className="hud-phase">{inCulture ? '培養フェーズ' : '侵略フェーズ'}</div>
+        <div className="hud-phase">{inCulture ? t.phase.culture : t.phase.invasion}</div>
         <div className="hud-depth">
-          {inCulture ? '培養槽' : `深度 ${s.depth}`}
-          <span className="hud-depth-name">{inCulture ? '安全' : name.zone}</span>
+          {inCulture ? t.phase.cultureTank : fill(t.phase.depth, { depth: s.depth })}
+          <span className="hud-depth-name">{inCulture ? t.phase.safe : name.zone}</span>
         </div>
       </div>
 
@@ -54,13 +55,13 @@ export function HUD() {
 
       {s.meta.reserveSeconds > 0 && (
         <span className="reserve" data-spent={s.reserveUsed}>
-          予備電源 {s.reserveUsed ? '使用済み' : `+${s.meta.reserveSeconds}s`}
+          {s.reserveUsed ? t.reserve.spent : fill(t.reserve.ready, { sec: s.meta.reserveSeconds })}
         </span>
       )}
 
       {/* 培養中は中央に円タイマーが出ているので、同じ数字を二重に出さない */}
       {inCulture ? (
-        <div className="hud-standby">検体を増やせ</div>
+        <div className="hud-standby">{t.phase.standby}</div>
       ) : (
         <div className="hud-timer" data-warn={s.timeLeft <= 15}>
           {mmss(s.timeLeft)}

@@ -1,8 +1,8 @@
+import { t } from '../text/index.ts'
 export type BuildingId = 'tank' | 'feeder' | 'breeder' | 'accelerator' | 'launcher'
 
 export type BuildingDef = {
   id: BuildingId
-  name: string
   baseCost: number
   growth: number
   /** 培養液の毎秒産出 */
@@ -20,12 +20,17 @@ export type BuildingDef = {
 // 表として読むために整形を止めている（1 行 = 1 設備）
 // prettier-ignore
 export const BUILDINGS: BuildingDef[] = [
-  { id: 'tank',        name: '培養槽',   baseCost: 10,   growth: 1.13, cultureRate: 1, clickBonus: true },
-  { id: 'feeder',      name: '給餌装置', baseCost: 120,  growth: 1.14, cultureRate: 10 },
-  { id: 'breeder',     name: '繁殖槽',   baseCost: 25,   growth: 1.15, sharkRate: 0.8 },
-  { id: 'accelerator', name: '加速炉',   baseCost: 800,  growth: 1.2,  sharkRateMult: 0.2 },
-  { id: 'launcher',    name: '射出管',   baseCost: 600,  growth: 1.18, launchRate: 15 },
+  { id: 'tank',          baseCost: 10,     growth: 1.13,   cultureRate: 1, clickBonus: true },
+  { id: 'feeder',        baseCost: 120,    growth: 1.14,   cultureRate: 10 },
+  { id: 'breeder',       baseCost: 25,     growth: 1.15,   sharkRate: 0.8 },
+  { id: 'accelerator',   baseCost: 800,    growth: 1.2,    sharkRateMult: 0.2 },
+  { id: 'launcher',      baseCost: 600,    growth: 1.18,   launchRate: 15 },
 ]
+
+/** 表示名は text/ja.ts が持つ */
+export function buildingName(id: BuildingId): string {
+  return t.building[id].name
+}
 
 export const BUILDING_INDEX = new Map(BUILDINGS.map((b, i) => [b.id, i]))
 

@@ -1,7 +1,8 @@
-import { BUILDINGS } from '../game/buildings.ts'
+import { BUILDINGS, buildingName } from '../game/buildings.ts'
 import { type Config, DEFAULT_CONFIG, withConfig } from '../game/config.ts'
 import { totalSharks } from '../game/inventory.ts'
 import { MUTATION_BY_ID, expectedPower, nameOfMask, powerOfMask } from '../game/mutations.ts'
+import { mutationName } from '../game/mutations.ts'
 import { applyMetaToConfig, createMeta, type MetaState, metaEffects } from '../game/meta.ts'
 import { createState, type GameState } from '../game/state.ts'
 import { applyDraft, clickEV, clickValue, cultureRate, tick } from '../game/tick.ts'
@@ -77,7 +78,7 @@ export function simulate(opts: SimOptions = {}): SimResult {
     leftover: totalSharks(s.inv),
     expPower: expectedPower(s.ranks, cfg),
     draftCount: s.draftCount,
-    ranks: [...s.ranks.entries()].map(([id, r]) => `${MUTATION_BY_ID.get(id)!.name}R${r}`).join(' '),
+    ranks: [...s.ranks.entries()].map(([id, r]) => `${mutationName(MUTATION_BY_ID.get(id)!)}R${r}`).join(' '),
     topStacks: stacks,
   }
 }
@@ -136,7 +137,7 @@ if (mode === 'draft') {
     console.log(`  ${st.name.padEnd(16)} ${fmt(st.count).padStart(9)} 体   戦闘力 ${fmt(st.power)}`)
   }
   console.log(`\n  出撃せず残ったサメ: ${fmt(r.leftover)} 体 / 生産 ${fmt(r.produced)} 体`)
-  console.log(`  最終施設: ${BUILDINGS.map((b, i) => `${b.name}?`).join(' ')}`)
+  console.log(`  最終施設: ${BUILDINGS.map((b) => `${buildingName(b.id)}?`).join(' ')}`)
 }
 
 if (mode === 'sweep') {

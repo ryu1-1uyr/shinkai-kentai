@@ -1,5 +1,6 @@
 import { DEFAULT_CONFIG } from '../game/config.ts'
 import { MUTATIONS, type MutationId, offerWeight, RARITY } from '../game/mutations.ts'
+import { mutationName } from '../game/mutations.ts'
 
 const cfg = DEFAULT_CONFIG
 
@@ -39,7 +40,7 @@ console.log('\n' + '-'.repeat(30 + levels.length * 8))
 
 const rows = levels.map((p) => appearRates(p))
 for (const m of MUTATIONS) {
-  process.stdout.write(`${m.name.padEnd(12)}  ${m.rarity.padEnd(10)}  `)
+  process.stdout.write(`${mutationName(m).padEnd(12)}  ${m.rarity.padEnd(10)}  `)
   rows.forEach((r) => {
     const v = (r.get(m.id) ?? 0) * 100
     process.stdout.write(`${(v < 1 ? v.toFixed(2) : v.toFixed(1)).padStart(6)}% `)

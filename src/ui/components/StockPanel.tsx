@@ -1,7 +1,8 @@
-import { cachedPower, MUTATIONS, nameOfMask, rateAt } from '../../game/mutations.ts'
+import { cachedPower, MUTATIONS, mutationName, nameOfMask, rateAt } from '../../game/mutations.ts'
 import { totalSharks } from '../../game/inventory.ts'
 import { getConfig } from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
+import { fill, t } from '../../text/index.ts'
 import { useGame } from '../useGame.ts'
 import { SharkIcon } from './SharkIcon.tsx'
 import { Sprite } from './Sprite.tsx'
@@ -56,9 +57,9 @@ export function StockPanel() {
   return (
     <div className="col area-stock">
       <div className="panel">
-        <div className="panel-title">保有している突然変異</div>
+        <div className="panel-title">{t.stock.mutationTitle}</div>
         {s.ranks.size === 0 ? (
-          <p className="empty-note">まだ変異は発現していない。検体を生産すると実験機会が訪れる。</p>
+          <p className="empty-note">{t.stock.mutationEmpty}</p>
         ) : (
           <div className="mut-list">
             {MUTATIONS.filter((m) => (s.ranks.get(m.id) ?? 0) > 0).map((m) => {
@@ -66,7 +67,7 @@ export function StockPanel() {
               return (
                 <span key={m.id} className="mut" data-rarity={m.rarity}>
                   <Sprite kind="mutation" id={m.id} size={18} />
-                  {m.name}
+                  {mutationName(m)}
                   <span className="mut-rank">
                     R{rank}
                     {s.meta.showNumbers && ` ${(rateAt(m, rank, cfg) * 100).toFixed(0)}%`}
@@ -79,12 +80,10 @@ export function StockPanel() {
       </div>
 
       <div className="panel scroll">
-        <div className="panel-title">検体在庫</div>
-        {s.phase === 'invasion' && (
-          <p className="panel-note">生産した端から出撃していくため、在庫はほぼゼロで推移する。</p>
-        )}
+        <div className="panel-title">{t.stock.title}</div>
+        {s.phase === 'invasion' && <p className="panel-note">{t.stock.note}</p>}
         {shown.length === 0 ? (
-          <p className="empty-note">まだ検体がいない。培養液を集めて生産を始める。</p>
+          <p className="empty-note">{t.stock.empty}</p>
         ) : (
           shown.map((st) => (
             <div key={st.mask} className="stack" data-empty={st.count < 1}>
@@ -97,7 +96,7 @@ export function StockPanel() {
         )}
         {restSpecies > 0 && (
           <div className="stack">
-            <span className="stack-name empty-note">その他 {restSpecies} 種</span>
+            <span className="stack-name empty-note">{fill(t.stock.rest, { n: restSpecies })}</span>
             <span className="stack-count">{fmt(Math.max(0, restCount))}</span>
           </div>
         )}

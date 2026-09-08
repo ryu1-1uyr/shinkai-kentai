@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { maskOf, MUTATIONS, nameOfMask } from '../../game/mutations.ts'
+import { mutationName } from '../../game/mutations.ts'
 import { sharkSprite } from '../../render/sharkSprite.ts'
 import { useAssetVersion } from '../useAssetVersion.ts'
 
@@ -59,7 +60,7 @@ export function SpriteLab({ onClose }: { onClose: () => void }) {
         <div className="slab-grid">
           <Cell mask={0} label="通常サメ" />
           {MUTATIONS.map((m) => (
-            <Cell key={m.id} mask={maskOf(m)} label={m.name} />
+            <Cell key={m.id} mask={maskOf(m)} label={mutationName(m)} />
           ))}
         </div>
 

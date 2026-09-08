@@ -1,5 +1,10 @@
 import type { Config } from './config.ts'
-import { type Family, FAMILIES, type MutationId } from './mutations.ts'
+import { type Family, FAMILIES, familyName, type MutationId } from './mutations.ts'
+import { fill, t, type Text } from '../text/index.ts'
+
+/** 節の id は辞書のキーと 1 対 1。辞書に無い id はコンパイルで落ちる */
+export type UpgradeId = keyof Text['upgrade']
+export type UnlockId = keyof Text['unlock']
 
 /**
  * 恒久強化。ラン終了時に得た研究予算で買い、次のラン以降に永続する。
@@ -32,9 +37,8 @@ export function createMeta(): MetaState {
 // ---------------------------------------------------------------------------
 
 export type NumericUpgrade = {
-  id: string
-  name: string
-  /** レベル lv のときの効果説明 */
+  id: UpgradeId
+  /** レベル lv のときの効果説明。文言は text/ja.ts、数式はここ */
   detail: (lv: number) => string
   baseCost: number
   costGrowth: number
@@ -45,80 +49,70 @@ export type NumericUpgrade = {
 export const NUMERIC_UPGRADES: NumericUpgrade[] = [
   {
     id: 'clickPower',
-    name: 'クリック増幅',
-    detail: (lv) => `培養液の手動採取 ×${(1 + 0.3 * lv).toFixed(1)}`,
+    detail: (lv) => fill(t.upgrade.clickPower.detail, { mult: (1 + 0.3 * lv).toFixed(1) }),
     baseCost: 20,
     costGrowth: 1.9,
     maxLevel: 20,
   },
   {
     id: 'extraReroll',
-    name: '予備実験枠',
-    detail: (lv) => `ドラフトの引き直しが 1 ラン に ${1 + lv} 回になる`,
+    detail: (lv) => fill(t.upgrade.extraReroll.detail, { n: 1 + lv }),
     baseCost: 3000,
     costGrowth: 2.1,
     maxLevel: 9,
   },
   {
     id: 'critChance',
-    name: '採取の勘',
-    detail: (lv) => `手動採取の ${5 * lv}% が会心になる`,
+    detail: (lv) => fill(t.upgrade.critChance.detail, { pct: 5 * lv }),
     baseCost: 120,
     costGrowth: 1.9,
     maxLevel: 10,
   },
   {
     id: 'critPower',
-    name: '一点集中',
-    detail: (lv) => `会心した採取が ×${(2 + 0.7 * lv).toFixed(1)}`,
+    detail: (lv) => fill(t.upgrade.critPower.detail, { mult: (2 + 0.7 * lv).toFixed(1) }),
     baseCost: 400,
     costGrowth: 2.0,
     maxLevel: 10,
   },
   {
     id: 'startTanks',
-    name: '培養槽の常設',
-    detail: (lv) => `開始時に培養槽を ${lv} 個持つ`,
+    detail: (lv) => fill(t.upgrade.startTanks.detail, { n: lv }),
     baseCost: 30,
     costGrowth: 2.2,
     maxLevel: 12,
   },
   {
     id: 'cultureRate',
-    name: '培養液生産',
-    detail: (lv) => `培養液の自動生産 ×${(1 + 0.25 * lv).toFixed(2)}`,
+    detail: (lv) => fill(t.upgrade.cultureRate.detail, { mult: (1 + 0.25 * lv).toFixed(2) }),
     baseCost: 40,
     costGrowth: 2.0,
     maxLevel: 20,
   },
   {
     id: 'sharkRate',
-    name: '繁殖効率',
-    detail: (lv) => `検体の生産速度 ×${(1 + 0.25 * lv).toFixed(2)}`,
+    detail: (lv) => fill(t.upgrade.sharkRate.detail, { mult: (1 + 0.25 * lv).toFixed(2) }),
     baseCost: 60,
     costGrowth: 2.0,
     maxLevel: 20,
   },
   {
     id: 'startSharks',
-    name: '検体の備蓄',
-    detail: (lv) => `開始時に検体を ${lv * 25} 体持つ`,
+    detail: (lv) => fill(t.upgrade.startSharks.detail, { n: lv * 25 }),
     baseCost: 80,
     costGrowth: 2.3,
     maxLevel: 15,
   },
   {
     id: 'launchRate',
-    name: '射出機構',
-    detail: (lv) => `投入速度 ×${(1 + 0.2 * lv).toFixed(2)}`,
+    detail: (lv) => fill(t.upgrade.launchRate.detail, { mult: (1 + 0.2 * lv).toFixed(2) }),
     baseCost: 120,
     costGrowth: 2.1,
     maxLevel: 15,
   },
   {
     id: 'sharkPower',
-    name: '基礎戦闘力',
-    detail: (lv) => `全検体の戦闘力 ×${(1 + 0.4 * lv).toFixed(1)}`,
+    detail: (lv) => fill(t.upgrade.sharkPower.detail, { mult: (1 + 0.4 * lv).toFixed(1) }),
     baseCost: 200,
     costGrowth: 2.6,
     maxLevel: 25,
@@ -139,32 +133,28 @@ export const NUMERIC_UPGRADES: NumericUpgrade[] = [
 export const ENDLESS_UPGRADES: NumericUpgrade[] = [
   {
     id: 'endlessCulture',
-    name: '過剰培養',
-    detail: (lv) => `培養液の生産 ×${(1 + 0.5 * lv).toFixed(1)}`,
+    detail: (lv) => fill(t.upgrade.endlessCulture.detail, { mult: (1 + 0.5 * lv).toFixed(1) }),
     baseCost: 30000,
     costGrowth: 1.55,
     maxLevel: Infinity,
   },
   {
     id: 'endlessBreed',
-    name: '過剰繁殖',
-    detail: (lv) => `検体の生産速度 ×${(1 + 0.5 * lv).toFixed(1)}`,
+    detail: (lv) => fill(t.upgrade.endlessBreed.detail, { mult: (1 + 0.5 * lv).toFixed(1) }),
     baseCost: 40000,
     costGrowth: 1.55,
     maxLevel: Infinity,
   },
   {
     id: 'endlessLaunch',
-    name: '過剰射出',
-    detail: (lv) => `投入速度 ×${(1 + 0.5 * lv).toFixed(1)}`,
+    detail: (lv) => fill(t.upgrade.endlessLaunch.detail, { mult: (1 + 0.5 * lv).toFixed(1) }),
     baseCost: 60000,
     costGrowth: 1.55,
     maxLevel: Infinity,
   },
   {
     id: 'endlessPower',
-    name: '過剰改造',
-    detail: (lv) => `全検体の戦闘力 ×${(1 + 1.0 * lv).toFixed(1)}`,
+    detail: (lv) => fill(t.upgrade.endlessPower.detail, { mult: (1 + 1.0 * lv).toFixed(1) }),
     baseCost: 120000,
     costGrowth: 1.6,
     maxLevel: Infinity,
@@ -173,7 +163,7 @@ export const ENDLESS_UPGRADES: NumericUpgrade[] = [
 
 NUMERIC_UPGRADES.push(...ENDLESS_UPGRADES)
 
-export const NUMERIC_BY_ID = new Map(NUMERIC_UPGRADES.map((u) => [u.id, u]))
+export const NUMERIC_BY_ID = new Map<string, NumericUpgrade>(NUMERIC_UPGRADES.map((u) => [u.id, u]))
 
 export function upgradeCost(u: NumericUpgrade, level: number): number {
   return Math.floor(u.baseCost * Math.pow(u.costGrowth, level))
@@ -184,9 +174,7 @@ export function upgradeCost(u: NumericUpgrade, level: number): number {
 // ---------------------------------------------------------------------------
 
 export type UnlockDef = {
-  id: string
-  name: string
-  detail: string
+  id: UnlockId
   cost: number
   kind: 'family' | 'qol' | 'unique'
   family?: Family
@@ -197,16 +185,12 @@ export type UnlockDef = {
 export const UNLOCKS: UnlockDef[] = [
   {
     id: 'family_abyss',
-    name: `${FAMILIES.abyss.name}の解禁`,
-    detail: '高圧適応・深淵種・触手化・古代神性がドラフトに追加される',
     cost: 500,
     kind: 'family',
     family: 'abyss',
   },
   {
     id: 'family_mech',
-    name: `${FAMILIES.mech.name}の解禁`,
-    detail: '装甲化・機械化・帯電化・自律兵装がドラフトに追加される',
     cost: 2500,
     kind: 'family',
     family: 'mech',
@@ -214,8 +198,6 @@ export const UNLOCKS: UnlockDef[] = [
   },
   {
     id: 'family_cosmic',
-    name: `${FAMILIES.cosmic.name}の解禁`,
-    detail: '無重力・隕石化・宇宙化・エイリアンがドラフトに追加される',
     cost: 15000,
     kind: 'family',
     family: 'cosmic',
@@ -223,138 +205,102 @@ export const UNLOCKS: UnlockDef[] = [
   },
   {
     id: 'family_disaster',
-    name: `${FAMILIES.disaster.name}の解禁`,
-    detail: '竜巻化・灼熱・氷結・暴風・大津波がドラフトに追加される',
     cost: 40000,
     kind: 'family',
     family: 'disaster',
     requires: 'family_cosmic',
   },
-  { id: 'speed2', name: '倍速 ×2', detail: '実験の進行を 2 倍速にできる', cost: 300, kind: 'qol' },
+  { id: 'speed2', cost: 300, kind: 'qol' },
   {
     id: 'doubleClick',
-    name: 'ダブルクリック',
-    detail: '手動採取で得られる培養液が 2 倍になる',
     cost: 700,
     kind: 'unique',
   },
   {
     id: 'autoBuyOne',
-    name: '定期発注',
-    detail: '設備を 1 種類だけ選んで自動購入できる（選び直しは自由）',
     cost: 1200,
     kind: 'qol',
   },
   {
     id: 'analysis',
-    name: '解析装置',
-    detail: '突然変異の発現率と戦闘力倍率が読めるようになる',
     cost: 400,
     kind: 'unique',
   },
   {
     id: 'reroll',
-    name: '再実験',
-    detail: 'ドラフトを 1 ラン に 1 回だけ引き直せる',
     cost: 1500,
     kind: 'unique',
   },
   {
     id: 'earlyDraft',
-    name: '早期実験',
-    detail: '最初のドラフトが累計 10 体で訪れる（通常は 50 体）',
     cost: 2200,
     kind: 'unique',
   },
   {
     id: 'lastStand',
-    name: '緊急浮上',
-    detail: 'ラン終了時、在庫の検体をすべて投入してから終わる',
     cost: 2800,
     kind: 'unique',
   },
   {
     id: 'reservePower',
-    name: '予備電源',
-    detail: '制限時間が尽きた瞬間、1 ラン に 1 回だけ +20 秒',
     cost: 4000,
     kind: 'unique',
   },
   {
     id: 'extraOffer',
-    name: '追加検体枠',
-    detail: 'ドラフトの提示が 3 枚から 4 枚になる',
     cost: 5000,
     kind: 'unique',
   },
   {
     id: 'chainCollapse',
-    name: '連鎖崩壊',
-    detail: '建物を破壊した際の余剰ダメージが、次の建物に 2 倍で通る',
     cost: 7000,
     kind: 'unique',
   },
   {
     id: 'prototype',
-    name: '試作認可',
-    detail: '突然変異のランク上限が 3 から 4 になる',
     cost: 20000,
     kind: 'unique',
   },
   {
     id: 'tankSynergy',
-    name: '温度管理',
-    detail: '培養槽 1 個につき培養液の生産 +2%',
     cost: 1000,
     kind: 'unique',
   },
   {
     id: 'feederSynergy',
-    name: '給餌連動',
-    detail: '給餌装置 1 個につき培養液の生産 +3%',
     cost: 1800,
     kind: 'unique',
   },
   {
     id: 'breederSynergy',
-    name: '過密飼育',
-    detail: '繁殖槽 1 個につき検体の生産速度 +2%',
     cost: 2600,
     kind: 'unique',
   },
   {
     id: 'launcherSynergy',
-    name: '射出斉射',
-    detail: '射出管 1 個につき投入速度 +3%',
     cost: 3600,
     kind: 'unique',
   },
   {
     id: 'autoClick',
-    name: '自動採取装置',
-    detail: '毎秒 5 回ぶんの培養液を自動で採取する（会心はしない）',
     cost: 900,
     kind: 'qol',
   },
   {
     id: 'speed4',
-    name: '倍速 ×4',
-    detail: '実験の進行を 4 倍速にできる',
     cost: 2000,
     kind: 'qol',
     requires: 'speed2',
   },
   {
     id: 'autoBuyAll',
-    name: 'AI 発注',
-    detail: '買える設備をすべて自動で購入する（オン / オフ切り替え可）',
     cost: 12000,
     kind: 'qol',
     requires: 'autoBuyOne',
   },
 ]
 
-export const UNLOCK_BY_ID = new Map(UNLOCKS.map((u) => [u.id, u]))
+export const UNLOCK_BY_ID = new Map<string, UnlockDef>(UNLOCKS.map((u) => [u.id, u]))
 
 // ---------------------------------------------------------------------------
 // 効果の集計
@@ -523,15 +469,7 @@ export function buyUnlock(m: MetaState, id: string): boolean {
  */
 export type BranchId = 'prod' | 'spec' | 'raid' | 'lab' | 'fam' | 'ops' | 'over'
 
-export const BRANCHES: Record<BranchId, { name: string; sub: string }> = {
-  prod: { name: '培養', sub: '培養液を増やす' },
-  spec: { name: '検体', sub: '検体を増やし強くする' },
-  raid: { name: '侵略', sub: '投入と破壊を伸ばす' },
-  lab: { name: '実験', sub: 'ドラフトを操作する' },
-  fam: { name: '系統', sub: '変異の種類を解禁する' },
-  ops: { name: '運用', sub: '周回を速くする' },
-  over: { name: '超過', sub: '際限なく積み増す' },
-}
+export const BRANCHES = t.branch
 
 export type TreeNode = {
   id: string
@@ -631,7 +569,9 @@ export function nodeCost(m: MetaState, id: string): number | null {
 }
 
 export function nodeName(id: string): string {
-  return NUMERIC_BY_ID.get(id)?.name ?? UNLOCK_BY_ID.get(id)?.name ?? id
+  if (id in t.upgrade) return t.upgrade[id as UpgradeId].name
+  if (id in t.unlock) return t.unlock[id as UnlockId].name
+  return id
 }
 
 export function nodeDetail(m: MetaState, id: string): string {
@@ -640,7 +580,7 @@ export function nodeDetail(m: MetaState, id: string): string {
     const lv = m.levels[id] ?? 0
     return n.detail(Math.min(lv + 1, n.maxLevel))
   }
-  return UNLOCK_BY_ID.get(id)?.detail ?? ''
+  return id in t.unlock ? t.unlock[id as UnlockId].detail : ''
 }
 
 /** 購入できるか。前提・上限・所持予算をすべて見る */

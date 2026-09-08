@@ -1,4 +1,5 @@
 import type { Config } from './config.ts'
+import { t } from '../text/index.ts'
 
 // prettier-ignore
 export type MutationId =
@@ -20,12 +21,21 @@ export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary'
  */
 export type Family = 'bio' | 'abyss' | 'mech' | 'cosmic' | 'disaster'
 
-export const FAMILIES: Record<Family, { name: string; initial: boolean }> = {
-  bio: { name: '生体系', initial: true },
-  abyss: { name: '深海系', initial: false },
-  mech: { name: '機械系', initial: false },
-  cosmic: { name: '宇宙系', initial: false },
-  disaster: { name: '災害系', initial: false },
+export const FAMILIES: Record<Family, { initial: boolean }> = {
+  bio: { initial: true },
+  abyss: { initial: false },
+  mech: { initial: false },
+  cosmic: { initial: false },
+  disaster: { initial: false },
+}
+
+/** 表示名はすべて text/ja.ts が持つ */
+export function familyName(family: Family): string {
+  return t.family[family]
+}
+
+export function mutationName(def: { id: MutationId }): string {
+  return t.mutation[def.id].name
 }
 
 // prettier-ignore
@@ -70,9 +80,6 @@ export function addMutation(mask: MutationMask, def: { bit: number }): MutationM
 
 export type MutationDef = {
   id: MutationId
-  name: string
-  /** 複合サメの名前を組むときの接頭辞 */
-  prefix: string
   /** ビットマスク上の位置 */
   bit: number
   /** ランク 1 の発現率 */
@@ -91,46 +98,46 @@ export type MutationDef = {
 // prettier-ignore
 export const MUTATIONS: MutationDef[] = [
   // --- 生体系（初期から出る） ---
-  { id: 'glow',       name: '発光',       prefix: '発光',             bit: 0,  baseRate: 0.18, basePower: 5,   rarity: 'common',    family: 'bio' },
-  { id: 'frenzy',     name: '凶暴化',     prefix: '狂乱',             bit: 1,  baseRate: 0.15, basePower: 4,   rarity: 'common',    family: 'bio' },
-  { id: 'swift',      name: '高速遊泳',   prefix: 'スイフト',         bit: 2,  baseRate: 0.16, basePower: 6,   rarity: 'common',    family: 'bio' },
-  { id: 'albino',     name: '白化',       prefix: 'アルビノ',         bit: 3,  baseRate: 0.12, basePower: 10,  rarity: 'common',    family: 'bio' },
-  { id: 'spike',      name: '棘皮',       prefix: 'スパイク',         bit: 4,  baseRate: 0.13, basePower: 9,   rarity: 'common',    family: 'bio' },
-  { id: 'poison',     name: '猛毒',       prefix: 'ポイズン',         bit: 5,  baseRate: 0.08, basePower: 30,  rarity: 'uncommon',  family: 'bio' },
-  { id: 'twinHead',   name: '双頭化',     prefix: 'デュアルヘッド',   bit: 6,  baseRate: 0.10, basePower: 8,   rarity: 'common',    family: 'bio' },
-  { id: 'tripleHead', name: '三頭化',     prefix: 'トリプルヘッド',   bit: 7,  baseRate: 0.05, basePower: 85,  rarity: 'rare',      family: 'bio' },
-  { id: 'swarm',      name: 'ダブル',     prefix: 'ダブル',           bit: 8,  baseRate: 0.12, basePower: 6,   rarity: 'common',    family: 'bio' },
-  { id: 'triple',     name: 'トリプル',   prefix: 'トリプル',         bit: 9,  baseRate: 0.07, basePower: 20,  rarity: 'uncommon',  family: 'bio' },
-  { id: 'giant',      name: '巨大化',     prefix: '巨大',             bit: 10, baseRate: 0.08, basePower: 25,  rarity: 'uncommon',  family: 'bio' },
-  { id: 'fungus',     name: '菌類化',     prefix: 'キノコ',           bit: 11, baseRate: 0.08, basePower: 28,  rarity: 'uncommon',  family: 'bio' },
-  { id: 'ghost',      name: '幽体化',     prefix: 'ゴースト',         bit: 12, baseRate: 0.05, basePower: 95,  rarity: 'rare',      family: 'bio' },
-  { id: 'zombie',     name: '屍化',       prefix: 'ゾンビ',           bit: 13, baseRate: 0.05, basePower: 110, rarity: 'rare',      family: 'bio' },
-  { id: 'ancient',    name: '超古代',     prefix: 'エンシェント',     bit: 14, baseRate: 0.03, basePower: 420, rarity: 'legendary', family: 'bio' },
+  { id: 'glow',        bit: 0,   baseRate: 0.18,    basePower: 5,      rarity: 'common',     family: 'bio' },
+  { id: 'frenzy',      bit: 1,   baseRate: 0.15,    basePower: 4,      rarity: 'common',     family: 'bio' },
+  { id: 'swift',       bit: 2,   baseRate: 0.16,    basePower: 6,      rarity: 'common',     family: 'bio' },
+  { id: 'albino',      bit: 3,   baseRate: 0.12,    basePower: 10,     rarity: 'common',     family: 'bio' },
+  { id: 'spike',       bit: 4,   baseRate: 0.13,    basePower: 9,      rarity: 'common',     family: 'bio' },
+  { id: 'poison',      bit: 5,   baseRate: 0.08,    basePower: 30,     rarity: 'uncommon',   family: 'bio' },
+  { id: 'twinHead',    bit: 6,   baseRate: 0.10,    basePower: 8,      rarity: 'common',     family: 'bio' },
+  { id: 'tripleHead',  bit: 7,   baseRate: 0.05,    basePower: 85,     rarity: 'rare',       family: 'bio' },
+  { id: 'swarm',       bit: 8,   baseRate: 0.12,    basePower: 6,      rarity: 'common',     family: 'bio' },
+  { id: 'triple',      bit: 9,   baseRate: 0.07,    basePower: 20,     rarity: 'uncommon',   family: 'bio' },
+  { id: 'giant',       bit: 10,  baseRate: 0.08,    basePower: 25,     rarity: 'uncommon',   family: 'bio' },
+  { id: 'fungus',      bit: 11,  baseRate: 0.08,    basePower: 28,     rarity: 'uncommon',   family: 'bio' },
+  { id: 'ghost',       bit: 12,  baseRate: 0.05,    basePower: 95,     rarity: 'rare',       family: 'bio' },
+  { id: 'zombie',      bit: 13,  baseRate: 0.05,    basePower: 110,    rarity: 'rare',       family: 'bio' },
+  { id: 'ancient',     bit: 14,  baseRate: 0.03,    basePower: 420,    rarity: 'legendary',  family: 'bio' },
 
   // --- 深海系 ---
-  { id: 'pressure',   name: '高圧適応',   prefix: '深圧',             bit: 15, baseRate: 0.09, basePower: 30,  rarity: 'uncommon',  family: 'abyss' },
-  { id: 'abyss',      name: '深淵種',     prefix: 'アビス',           bit: 16, baseRate: 0.05, basePower: 90,  rarity: 'rare',      family: 'abyss' },
-  { id: 'tentacle',   name: '触手化',     prefix: 'タコ',             bit: 17, baseRate: 0.05, basePower: 130, rarity: 'rare',      family: 'abyss' },
-  { id: 'eldritch',   name: '古代神性',   prefix: '邪神',             bit: 18, baseRate: 0.03, basePower: 450, rarity: 'legendary', family: 'abyss' },
+  { id: 'pressure',    bit: 15,  baseRate: 0.09,    basePower: 30,     rarity: 'uncommon',   family: 'abyss' },
+  { id: 'abyss',       bit: 16,  baseRate: 0.05,    basePower: 90,     rarity: 'rare',       family: 'abyss' },
+  { id: 'tentacle',    bit: 17,  baseRate: 0.05,    basePower: 130,    rarity: 'rare',       family: 'abyss' },
+  { id: 'eldritch',    bit: 18,  baseRate: 0.03,    basePower: 450,    rarity: 'legendary',  family: 'abyss' },
 
   // --- 機械系 ---
-  { id: 'armor',      name: '装甲化',     prefix: 'アーマード',       bit: 19, baseRate: 0.10, basePower: 18,  rarity: 'uncommon',  family: 'mech' },
-  { id: 'mecha',      name: '機械化',     prefix: 'メカ',             bit: 20, baseRate: 0.05, basePower: 60,  rarity: 'rare',      family: 'mech' },
-  { id: 'volt',       name: '帯電化',     prefix: 'サンダー',         bit: 21, baseRate: 0.05, basePower: 120, rarity: 'rare',      family: 'mech' },
-  { id: 'autonomous', name: '機械兵装',   prefix: '機械兵装',         bit: 22, baseRate: 0.03, basePower: 400, rarity: 'legendary', family: 'mech' },
+  { id: 'armor',       bit: 19,  baseRate: 0.10,    basePower: 18,     rarity: 'uncommon',   family: 'mech' },
+  { id: 'mecha',       bit: 20,  baseRate: 0.05,    basePower: 60,     rarity: 'rare',       family: 'mech' },
+  { id: 'volt',        bit: 21,  baseRate: 0.05,    basePower: 120,    rarity: 'rare',       family: 'mech' },
+  { id: 'autonomous',  bit: 22,  baseRate: 0.03,    basePower: 400,    rarity: 'legendary',  family: 'mech' },
 
   // --- 宇宙系 ---
-  { id: 'zeroG',      name: '飛行',       prefix: 'フライング',       bit: 23, baseRate: 0.10, basePower: 20,  rarity: 'uncommon',  family: 'cosmic' },
-  { id: 'meteor',     name: '隕石',       prefix: 'メテオ',           bit: 24, baseRate: 0.05, basePower: 100, rarity: 'rare',      family: 'cosmic' },
-  { id: 'cosmic',     name: '宇宙適応',   prefix: 'コズミック',       bit: 25, baseRate: 0.03, basePower: 350, rarity: 'legendary', family: 'cosmic' },
-  { id: 'alien',      name: 'エイリアン', prefix: 'エイリアン',       bit: 26, baseRate: 0.03, basePower: 500, rarity: 'legendary', family: 'cosmic' },
+  { id: 'zeroG',       bit: 23,  baseRate: 0.10,    basePower: 20,     rarity: 'uncommon',   family: 'cosmic' },
+  { id: 'meteor',      bit: 24,  baseRate: 0.05,    basePower: 100,    rarity: 'rare',       family: 'cosmic' },
+  { id: 'cosmic',      bit: 25,  baseRate: 0.03,    basePower: 350,    rarity: 'legendary',  family: 'cosmic' },
+  { id: 'alien',       bit: 26,  baseRate: 0.03,    basePower: 500,    rarity: 'legendary',  family: 'cosmic' },
 
   // --- 災害系 ---
-  { id: 'tornado',    name: '竜巻化',     prefix: 'トルネード',       bit: 27, baseRate: 0.09, basePower: 22,  rarity: 'uncommon',  family: 'disaster' },
-  { id: 'magma',      name: '灼熱',       prefix: 'マグマ',           bit: 28, baseRate: 0.08, basePower: 32,  rarity: 'uncommon',  family: 'disaster' },
-  { id: 'frozen',     name: '氷結',       prefix: 'フローズン',       bit: 29, baseRate: 0.05, basePower: 105, rarity: 'rare',      family: 'disaster' },
-  { id: 'storm',      name: '暴風',       prefix: 'ストーム',         bit: 30, baseRate: 0.05, basePower: 120, rarity: 'rare',      family: 'disaster' },
-  { id: 'tsunami',    name: '大津波',     prefix: 'ツナミ',           bit: 31, baseRate: 0.03, basePower: 430, rarity: 'legendary', family: 'disaster' },
+  { id: 'tornado',     bit: 27,  baseRate: 0.09,    basePower: 22,     rarity: 'uncommon',   family: 'disaster' },
+  { id: 'magma',       bit: 28,  baseRate: 0.08,    basePower: 32,     rarity: 'uncommon',   family: 'disaster' },
+  { id: 'frozen',      bit: 29,  baseRate: 0.05,    basePower: 105,    rarity: 'rare',       family: 'disaster' },
+  { id: 'storm',       bit: 30,  baseRate: 0.05,    basePower: 120,    rarity: 'rare',       family: 'disaster' },
+  { id: 'tsunami',     bit: 31,  baseRate: 0.03,    basePower: 430,    rarity: 'legendary',  family: 'disaster' },
 ]
 
 if (MUTATIONS.length > MAX_MUTATIONS) {
@@ -293,6 +300,6 @@ export function expectedPower(ranks: MutationRanks, cfg: Config, powerMult = 1):
 
 /** 複合サメの名前。変異 ID の定義順に接頭辞を連結するだけ */
 export function nameOfMask(mask: MutationMask): string {
-  const parts = MUTATIONS.filter((m) => hasMutation(mask, m)).map((m) => m.prefix)
-  return parts.length === 0 ? '通常サメ' : parts.join('') + 'サメ'
+  const parts = MUTATIONS.filter((m) => hasMutation(mask, m)).map((m) => t.mutation[m.id].prefix)
+  return parts.length === 0 ? t.shark.plain : parts.join('') + t.shark.suffix
 }
