@@ -32,7 +32,9 @@ console.log('growth  突破深度  総時間   戦果')
 for (const g of [1.8, 2.0, 2.2, 2.5, 3.0, 3.5, 4.0, 5.0, 6.5]) {
   const cfg = withConfig(DEFAULT_CONFIG, { targets: { hpGrowth: g } })
   const r = simulate({ cfg, draft: 'greedyEV' })
-  console.log(`${g.toFixed(1).padStart(5)}   ${String(r.clearedDepth).padStart(6)}   ${mmss(r.totalSeconds).padStart(6)}   ${fmt(r.score)}`)
+  console.log(
+    `${g.toFixed(1).padStart(5)}   ${String(r.clearedDepth).padStart(6)}   ${mmss(r.totalSeconds).padStart(6)}   ${fmt(r.score)}`,
+  )
 }
 
 console.log('\n=== C. メタ進行の伸びしろ: 恒久強化を basePower 倍率で近似 ===\n')
@@ -61,7 +63,9 @@ for (const g of [2.2, 3.0, 6.5]) {
   for (const model of ['runWide', 'perDepth'] as const) {
     const cfg = withConfig(DEFAULT_CONFIG, { targets: { hpGrowth: g }, invasion: { timerModel: model } })
     const r = simulate({ cfg, draft: 'greedyEV' })
-    console.log(`${g.toFixed(1).padStart(5)}   ${model.padEnd(9)}  ${String(r.clearedDepth).padStart(4)}  ${mmss(r.totalSeconds).padStart(6)}`)
+    console.log(
+      `${g.toFixed(1).padStart(5)}   ${model.padEnd(9)}  ${String(r.clearedDepth).padStart(4)}  ${mmss(r.totalSeconds).padStart(6)}`,
+    )
   }
 }
 void expectedPower

@@ -11,7 +11,10 @@ function fmt(n: number): string {
 }
 
 // 分散寄りに引いた方が複合サメが増えるので、両方見る
-for (const [label, draft] of [['分散寄り', 'spread'], ['最適化', 'greedyEV']] as const) {
+for (const [label, draft] of [
+  ['分散寄り', 'spread'],
+  ['最適化', 'greedyEV'],
+] as const) {
   const cfg = withConfig(DEFAULT_CONFIG, { targets: { hpGrowth: 3.0 }, mutation: { rankPowerMult: 1.2 } })
   const s = createState(cfg, 7)
   const chooser = makeDraftChooser(draft)
@@ -29,7 +32,9 @@ for (const [label, draft] of [['分散寄り', 'spread'], ['最適化', 'greedyE
     .map(([mask, count]) => ({ name: nameOfMask(mask), count, power: powerOfMask(mask, s.ranks, cfg) }))
     .sort((a, b) => b.power * b.count - a.power * a.count)
   for (const r of rows.slice(0, 10)) {
-    console.log(`  ${r.name.padEnd(20)} ${fmt(r.count).padStart(9)} 体   戦闘力 ${fmt(r.power).padStart(8)}   累計戦力 ${fmt(r.count * r.power)}`)
+    console.log(
+      `  ${r.name.padEnd(20)} ${fmt(r.count).padStart(9)} 体   戦闘力 ${fmt(r.power).padStart(8)}   累計戦力 ${fmt(r.count * r.power)}`,
+    )
   }
   console.log(`  ... 全 ${rows.length} 種`)
 }

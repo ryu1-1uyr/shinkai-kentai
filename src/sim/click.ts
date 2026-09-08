@@ -62,7 +62,12 @@ for (const [label, base, unlocks] of [
 ] as const) {
   console.log(`\n--- ${label} ---`)
   console.log('会心率Lv 会心倍率Lv  会心EV  手動の取り分（経過時点別）        総取り分')
-  for (const [c, p] of [[0, 0], [3, 3], [6, 4], [10, 10]] as const) {
+  for (const [c, p] of [
+    [0, 0],
+    [3, 3],
+    [6, 4],
+    [10, 10],
+  ] as const) {
     const r = run(c, p, base as Record<string, number>, unlocks as string[])
     console.log(
       `${String(c).padStart(6)} ${String(p).padStart(10)}  ×${r.ev.toFixed(2)}  ` +

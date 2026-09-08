@@ -13,15 +13,7 @@ import { useAssetVersion } from '../useAssetVersion.ts'
  */
 export type SpriteKind = 'building' | 'mutation' | 'policy' | 'resource' | 'target' | 'ui'
 
-export function Sprite({
-  kind,
-  id,
-  size = 22,
-}: {
-  kind: SpriteKind
-  id: string
-  size?: number
-}) {
+export function Sprite({ kind, id, size = 22 }: { kind: SpriteKind; id: string; size?: number }) {
   const ref = useRef<HTMLCanvasElement>(null)
   const assetVersion = useAssetVersion()
 

@@ -122,9 +122,5 @@ for (let i = 1; i <= RUNS; i++) {
 
 console.log('\n到達深度の推移:')
 console.log('  ' + depths.join(' → '))
-console.log(
-  `\n解禁済み: ${meta.unlocked.map((id) => UNLOCK_BY_ID.get(id)!.name).join(' / ') || 'なし'}`,
-)
-console.log(
-  `強化レベル: ${NUMERIC_UPGRADES.map((u) => `${u.name}${meta.levels[u.id] ?? 0}`).join(' ')}`,
-)
+console.log(`\n解禁済み: ${meta.unlocked.map((id) => UNLOCK_BY_ID.get(id)!.name).join(' / ') || 'なし'}`)
+console.log(`強化レベル: ${NUMERIC_UPGRADES.map((u) => `${u.name}${meta.levels[u.id] ?? 0}`).join(' ')}`)

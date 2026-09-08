@@ -28,7 +28,11 @@ export function ResultOverlay() {
     .sort((a, b) => b.traits - a.traits || b.power - a.power)[0]
 
   const species = [...s.births.entries()]
-    .map(([mask, count]) => ({ mask, count, power: powerOfMask(mask, s.ranks, cfg) }))
+    .map(([mask, count]) => ({
+      mask,
+      count,
+      power: powerOfMask(mask, s.ranks, cfg),
+    }))
     .filter((x) => x.count >= 1)
     .sort((a, b) => b.power * b.count - a.power * a.count)
     .slice(0, 8)
@@ -40,9 +44,7 @@ export function ResultOverlay() {
           <div className="modal-title">
             <Sprite kind="ui" id="beam" /> 施設が逆探知されました
           </div>
-          <div className="modal-sub">
-            軌道上より照射を確認。研究施設は消失。実験記録のみが残された。
-          </div>
+          <div className="modal-sub">軌道上より照射を確認。研究施設は消失。実験記録のみが残された。</div>
         </div>
 
         <div className="result-grid">
@@ -74,7 +76,7 @@ export function ResultOverlay() {
 
         {champion && champion.traits > 0 && (
           <div className="champion">
-            <div className="panel-title">今回の最高到達点</div>
+            <div className="panel-title">今回の最高到達サメ</div>
             <div className="champion-body">
               <SharkIcon mask={champion.mask} height={64} />
               <div className="champion-info">

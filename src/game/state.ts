@@ -2,7 +2,13 @@ import type { Config } from './config.ts'
 import { BUILDINGS, BUILDING_INDEX } from './buildings.ts'
 import { type MetaEffects, metaEffects, createMeta } from './meta.ts'
 import type { Inventory } from './inventory.ts'
-import { type MutationDef, type MutationId, type MutationMask, type MutationRanks, birthDistribution } from './mutations.ts'
+import {
+  type MutationDef,
+  type MutationId,
+  type MutationMask,
+  type MutationRanks,
+  birthDistribution,
+} from './mutations.ts'
 import {
   EMPTY_POLICY_EFFECTS,
   type PolicyDef,
@@ -15,8 +21,7 @@ import {
 export type Phase = 'culture' | 'invasion' | 'over'
 
 export type PendingDraft =
-  | { kind: 'mutation'; offers: MutationDef[] }
-  | { kind: 'policy'; offers: PolicyDef[] }
+  { kind: 'mutation'; offers: MutationDef[] } | { kind: 'policy'; offers: PolicyDef[] }
 
 export type LogKind = 'hit' | 'boss' | 'depth' | 'draft' | 'policy' | 'system' | 'birth'
 /** mask を持つ行は、その組み合わせのサメを添えて表示する */

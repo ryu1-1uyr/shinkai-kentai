@@ -14,9 +14,9 @@ import { decodePng, writePng } from './png.ts'
  */
 
 const PALETTE: Array<[number, number, number]> = [
-  [5, 6, 38],      // 輪郭の紺
-  [31, 36, 52],    // 暗部
-  [76, 84, 94],    // 影
+  [5, 6, 38], // 輪郭の紺
+  [31, 36, 52], // 暗部
+  [76, 84, 94], // 影
   [103, 112, 121], // 体のグレー（主）
   [139, 148, 157], // ハイライト
   [163, 172, 179], // 中間
@@ -41,7 +41,10 @@ function quantize(d: typeof src): Int8Array {
       const dg = PALETTE[k][1] - d.rgba[i + 1]
       const db = PALETTE[k][2] - d.rgba[i + 2]
       const v = dr * dr + dg * dg + db * db
-      if (v < bd) { bd = v; best = k }
+      if (v < bd) {
+        bd = v
+        best = k
+      }
     }
     q[p] = best
   }
@@ -51,7 +54,10 @@ function quantize(d: typeof src): Int8Array {
 const q = quantize(src)
 
 // 不透明部分の外接矩形
-let x0 = src.width, y0 = src.height, x1 = -1, y1 = -1
+let x0 = src.width,
+  y0 = src.height,
+  x1 = -1,
+  y1 = -1
 for (let y = 0; y < src.height; y++) {
   for (let x = 0; x < src.width; x++) {
     if (q[y * src.width + x] < 0) continue
@@ -73,7 +79,10 @@ for (let y = y0; y <= y1; y++) {
   let n = 0
   for (let x = x0; x <= x1; x++) {
     if (q[y * src.width + x] === 0) n++
-    else { if (n > 0 && n < 60) runs.set(n, (runs.get(n) ?? 0) + 1); n = 0 }
+    else {
+      if (n > 0 && n < 60) runs.set(n, (runs.get(n) ?? 0) + 1)
+      n = 0
+    }
   }
 }
 const top = [...runs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
@@ -83,7 +92,7 @@ console.log(`推定ドット数 ${(bw / dot).toFixed(1)} × ${(bh / dot).toFixed
 
 const dist = new Array(PALETTE.length).fill(0)
 let clearN = 0
-for (let i = 0; i < q.length; i++) (q[i] < 0 ? clearN++ : dist[q[i]]++)
+for (let i = 0; i < q.length; i++) q[i] < 0 ? clearN++ : dist[q[i]]++
 console.log('色の分布   ' + dist.map((n, i) => `#${i}:${(n / 1000).toFixed(0)}k`).join(' '))
 
 /** 区画の最頻色でダウンサンプルする */
@@ -104,10 +113,18 @@ function downsample(tw: number, th: number): Uint8Array {
           const v = q[y * src.width + x]
           votes.set(v, (votes.get(v) ?? 0) + 1)
         }
-      let best = -1, bn = -1
-      for (const [v, n] of votes) if (n > bn) { bn = n; best = v }
+      let best = -1,
+        bn = -1
+      for (const [v, n] of votes)
+        if (n > bn) {
+          bn = n
+          best = v
+        }
       const t = (ty * tw + tx) * 4
-      if (best < 0) { out[t + 3] = 0; continue }
+      if (best < 0) {
+        out[t + 3] = 0
+        continue
+      }
       out[t] = PALETTE[best][0]
       out[t + 1] = PALETTE[best][1]
       out[t + 2] = PALETTE[best][2]

@@ -1,5 +1,6 @@
 import type { Config } from './config.ts'
 
+// prettier-ignore
 export type MutationId =
   | 'glow' | 'frenzy' | 'swift' | 'albino' | 'spike' | 'poison'
   | 'twinHead' | 'tripleHead' | 'swarm' | 'triple' | 'giant'
@@ -27,10 +28,11 @@ export const FAMILIES: Record<Family, { name: string; initial: boolean }> = {
   disaster: { name: '災害系', initial: false },
 }
 
-export const RARITY: Record<Rarity, { weight: number; scale: number }> = {
-  common:    { weight: 1.0,  scale: 1 },
-  uncommon:  { weight: 0.7,  scale: 120 },
-  rare:      { weight: 0.45, scale: 600 },
+export // prettier-ignore
+const RARITY: Record<Rarity, { weight: number; scale: number }> = {
+  common: { weight: 1.0, scale: 1 },
+  uncommon: { weight: 0.7, scale: 120 },
+  rare: { weight: 0.45, scale: 600 },
   legendary: { weight: 0.16, scale: 2000 },
 }
 
@@ -85,6 +87,8 @@ export type MutationDef = {
  * 定義順がそのまま複合サメの名前の並び順になる。
  * 生体 → 深海 → 機械 → 宇宙 の順に接頭辞が付く。
  */
+// 表として読むために整形を止めている（1 行 = 1 変異）
+// prettier-ignore
 export const MUTATIONS: MutationDef[] = [
   // --- 生体系（初期から出る） ---
   { id: 'glow',       name: '発光',       prefix: '発光',             bit: 0,  baseRate: 0.18, basePower: 5,   rarity: 'common',    family: 'bio' },
@@ -148,9 +152,7 @@ export const MUTATION_BY_ID = new Map(MUTATIONS.map((m) => [m.id, m]))
 /** ランク r における発現率 */
 export function rateAt(def: MutationDef, rank: number, cfg: Config): number {
   if (rank <= 0) return 0
-  const raw = cfg.mutation.rankRateLinear
-    ? def.baseRate * rank
-    : 1 - Math.pow(1 - def.baseRate, rank)
+  const raw = cfg.mutation.rankRateLinear ? def.baseRate * rank : 1 - Math.pow(1 - def.baseRate, rank)
   // 発現率は 90% で頭打ちにする（全個体が同一変異になると在庫の多様性が死ぬ）
   return Math.min(raw, 0.9)
 }
@@ -168,12 +170,7 @@ export type MutationRanks = Map<MutationId, number>
  * サメ 1 体の戦闘力。持っている変異の倍率をすべて掛け合わせる。
  * mask から一意に決まるので、在庫スタックに戦闘力を保存しなくてもよい。
  */
-export function powerOfMask(
-  mask: MutationMask,
-  ranks: MutationRanks,
-  cfg: Config,
-  powerMult = 1,
-): number {
+export function powerOfMask(mask: MutationMask, ranks: MutationRanks, cfg: Config, powerMult = 1): number {
   let p = cfg.shark.basePower * powerMult
   for (const def of MUTATIONS) {
     if (hasMutation(mask, def)) p *= powerAt(def, ranks.get(def.id) ?? 0, cfg)

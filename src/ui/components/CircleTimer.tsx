@@ -5,15 +5,7 @@ const C = 2 * Math.PI * R
  * 円形タイマー。ratio は 1 → 0 に減っていく残量。
  * 見た目は CSS 変数に寄せてあるので、ガワ差し替え時もここは触らなくてよい。
  */
-export function CircleTimer({
-  ratio,
-  value,
-  caption,
-}: {
-  ratio: number
-  value: string
-  caption?: string
-}) {
+export function CircleTimer({ ratio, value, caption }: { ratio: number; value: string; caption?: string }) {
   const r = Math.max(0, Math.min(1, ratio))
   return (
     <div className="ct">

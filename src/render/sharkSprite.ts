@@ -65,6 +65,8 @@ const HEAD_W = BODY_W - HEAD_FROM
 function stampHead(ctx: Ctx, dx: number, dy: number): void {
   const img = asset('base')
   if (!img) return
+  // 引数の並びが「元の矩形 / 描く先の矩形」なので、行を分けたまま読ませる
+  // prettier-ignore
   ctx.drawImage(
     img,
     HEAD_FROM, 0, HEAD_W, BODY_H,
@@ -138,6 +140,7 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     palette: { rgb: [110, 190, 90], amount: 0.5 },
     overlay: (ctx) => {
       // 体表の毒の泡。胴の範囲 y16〜30 に散らす
+      // prettier-ignore
       const spots: Array<[number, number]> = [[26, 22], [34, 19], [42, 27], [50, 17], [68, 21], [74, 28], [80, 18], [38, 24], [64, 26]]
       for (const [x, y] of spots) {
         px(ctx, bx(x), by(y), 3, 3, '#c8ff7a')
@@ -176,6 +179,7 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     palette: { rgb: [180, 150, 120], amount: 0.3 },
     attach: (ctx) => {
       // 背中から生えたキノコ。傘は軸の真上に載せる
+      // prettier-ignore
       for (const [x, h, cap] of [[26, 5, 7], [38, 8, 9], [72, 6, 7], [82, 4, 5]] as const) {
         if (!inBody(x)) continue
         const t = trunkTop(x)
@@ -196,6 +200,7 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     palette: { rgb: [120, 140, 95], amount: 0.55 },
     attach: (ctx) => {
       // 欠けた体と剥き出しの肋骨。胴の中央帯 y18〜28 に置く
+      // prettier-ignore
       for (const [x, y, w] of [[30, 19, 7], [44, 24, 6], [68, 18, 6]] as const) {
         px(ctx, bx(x), by(y), w, 5, '#2a2f22')
         for (let i = 0; i < w; i += 2) px(ctx, bx(x) + i, by(y) + 1, 1, 3, '#ddd6c0')
@@ -249,6 +254,7 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     palette: { rgb: [90, 40, 110], amount: 0.35 },
     attach: (ctx) => {
       // 体表に増えた眼。鰓（x57〜63）は避ける
+      // prettier-ignore
       for (const [x, y] of [[30, 20], [40, 25], [46, 18], [68, 20], [76, 26], [36, 29]] as const) {
         px(ctx, bx(x), by(y), 4, 4, '#ffe98a')
         px(ctx, bx(x) + 1, by(y) + 1, 2, 2, '#1a0f24')
@@ -260,6 +266,7 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   armor: {
     attach: (ctx) => {
       // 背中に沿った装甲板。稜線から 7px ぶん被せる
+      // prettier-ignore
       for (const [x0, x1] of [[20, 30], [32, 42], [66, 76], [78, 86]] as const) {
         for (let x = x0; x <= x1; x++) {
           if (!inBody(x)) continue
@@ -294,6 +301,7 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
   volt: {
     overlay: (ctx) => {
       // 体に走る電撃
+      // prettier-ignore
       for (const [sx, sy] of [[24, 10], [46, 6], [70, 8], [86, 12]] as const) {
         let x = bx(sx)
         let y = by(sy)
@@ -310,11 +318,11 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     attach: (ctx) => {
       // 背びれの後ろ（x68〜80）に砲塔
       const t = trunkTop(74)
-      px(ctx, bx(66), t - 7, 14, 7, PALETTE.metal)       // 台座
+      px(ctx, bx(66), t - 7, 14, 7, PALETTE.metal) // 台座
       px(ctx, bx(66), t - 7, 14, 1, '#c9d1d8')
-      px(ctx, bx(78), t - 5, 12, 3, PALETTE.metalDark)   // 砲身
-      px(ctx, bx(88), t - 6, 2, 5, PALETTE.metalDark)    // 砲口
-      px(ctx, bx(70), t - 10, 3, 3, '#ff4d4d')           // ランプ
+      px(ctx, bx(78), t - 5, 12, 3, PALETTE.metalDark) // 砲身
+      px(ctx, bx(88), t - 6, 2, 5, PALETTE.metalDark) // 砲口
+      px(ctx, bx(70), t - 10, 3, 3, '#ff4d4d') // ランプ
     },
   },
 
@@ -334,6 +342,7 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
         px(ctx, x, y - sz / 2, sz, sz, c)
       }
       // 尾びれ自体も燃える
+      // prettier-ignore
       for (const [x, y] of [[3, 12], [6, 16], [2, 30], [5, 33]] as const) px(ctx, bx(x), by(y), 3, 3, '#ffb347')
     },
   },
@@ -384,6 +393,7 @@ const VISUALS: Partial<Record<MutationId, Visual>> = {
     palette: { rgb: [190, 230, 255], amount: 0.5 },
     attach: (ctx) => {
       // 体を覆う氷塊
+      // prettier-ignore
       for (const [x, y, sz] of [[24, 18, 7], [42, 25, 8], [58, 16, 6], [72, 23, 8], [84, 17, 5]] as const) {
         px(ctx, bx(x), by(y), sz, sz, '#dff2ff')
         px(ctx, bx(x) + 1, by(y) + 1, 2, 2, '#ffffff')
@@ -578,7 +588,10 @@ export function sharkBounds(mask: MutationMask, scale = 1): { x: number; y: numb
   if (hit) return hit
   const c = sharkSprite(mask, scale)
   const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data
-  let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1
+  let x0 = c.width,
+    y0 = c.height,
+    x1 = -1,
+    y1 = -1
   for (let y = 0; y < c.height; y++) {
     for (let x = 0; x < c.width; x++) {
       if (d[(y * c.width + x) * 4 + 3] < 8) continue
@@ -588,9 +601,8 @@ export function sharkBounds(mask: MutationMask, scale = 1): { x: number; y: numb
       if (y > y1) y1 = y
     }
   }
-  const box = x1 < 0
-    ? { x: 0, y: 0, w: c.width, h: c.height }
-    : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 }
+  const box =
+    x1 < 0 ? { x: 0, y: 0, w: c.width, h: c.height } : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 }
   boundsCache.set(key, box)
   return box
 }

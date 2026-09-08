@@ -2,9 +2,16 @@
  * レイアウト。名前付きグリッドエリアで組んであるので、
  * コンポーネントを触らずに配置を変えられる。
  */
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-html, body, #root { height: 100%; margin: 0; }
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
 
 body {
   background: var(--c-bg);
@@ -60,7 +67,9 @@ body::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body::after { opacity: 0.08; }
+  body::after {
+    opacity: 0.08;
+  }
 }
 
 .app {
@@ -69,25 +78,41 @@ body::after {
   grid-template-rows: auto 1fr;
   grid-template-columns: 260px 1fr 300px;
   grid-template-areas:
-    "hud      hud       hud"
-    "produce  invasion  stock";
+    'hud      hud       hud'
+    'produce  invasion  stock';
   gap: var(--sp-3);
   padding: var(--sp-3);
   max-width: 1400px;
   margin: 0 auto;
 }
 
-.area-hud { grid-area: hud; }
-.area-produce { grid-area: produce; min-height: 0; }
-.area-invasion { grid-area: invasion; min-height: 0; }
-.area-stock { grid-area: stock; min-height: 0; }
+.area-hud {
+  grid-area: hud;
+}
+.area-produce {
+  grid-area: produce;
+  min-height: 0;
+}
+.area-invasion {
+  grid-area: invasion;
+  min-height: 0;
+}
+.area-stock {
+  grid-area: stock;
+  min-height: 0;
+}
 
-.col { display: flex; flex-direction: column; gap: var(--sp-3); min-height: 0; }
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-height: 0;
+}
 
 @media (max-width: 1000px) {
   .app {
     grid-template-columns: 1fr;
-    grid-template-areas: "hud" "produce" "invasion" "stock";
+    grid-template-areas: 'hud' 'produce' 'invasion' 'stock';
     height: auto;
   }
 }

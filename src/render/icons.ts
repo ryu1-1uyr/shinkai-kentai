@@ -8,6 +8,7 @@
  * 定義は文字グリッド。1 文字 = 1 ドット。
  */
 
+// prettier-ignore
 const C: Record<string, string> = {
   '.': '',            // 透明
   '#': '#05061f',     // 輪郭（base.png の輪郭色）

@@ -8,10 +8,10 @@ export type BuyRatio = number[]
 
 export const BUY_RATIOS: Record<string, BuyRatio> = {
   // 培養槽 / 給餌装置 / 繁殖槽 / 加速炉 / 射出管
-  balanced:    [10, 4, 6, 2, 3],
-  cultureHeavy:[16, 6, 4, 1, 2],
-  sharkHeavy:  [8,  3, 10, 4, 3],
-  launchHeavy: [8,  3, 5,  2, 8],
+  balanced: [10, 4, 6, 2, 3],
+  cultureHeavy: [16, 6, 4, 1, 2],
+  sharkHeavy: [8, 3, 10, 4, 3],
+  launchHeavy: [8, 3, 5, 2, 8],
 }
 
 /**

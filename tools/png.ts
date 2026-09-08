@@ -146,13 +146,21 @@ export function decodePng(path: string): Decoded {
       rgba[t + 2] = plte![idx * 3 + 2]
       rgba[t + 3] = trns && idx < trns.length ? trns[idx] : 255
     } else if (colorType === 6) {
-      rgba[t] = lines[s]; rgba[t + 1] = lines[s + 1]; rgba[t + 2] = lines[s + 2]; rgba[t + 3] = lines[s + 3]
+      rgba[t] = lines[s]
+      rgba[t + 1] = lines[s + 1]
+      rgba[t + 2] = lines[s + 2]
+      rgba[t + 3] = lines[s + 3]
     } else if (colorType === 2) {
-      rgba[t] = lines[s]; rgba[t + 1] = lines[s + 1]; rgba[t + 2] = lines[s + 2]; rgba[t + 3] = 255
+      rgba[t] = lines[s]
+      rgba[t + 1] = lines[s + 1]
+      rgba[t + 2] = lines[s + 2]
+      rgba[t + 3] = 255
     } else if (colorType === 0) {
-      rgba[t] = rgba[t + 1] = rgba[t + 2] = lines[s]; rgba[t + 3] = 255
+      rgba[t] = rgba[t + 1] = rgba[t + 2] = lines[s]
+      rgba[t + 3] = 255
     } else {
-      rgba[t] = rgba[t + 1] = rgba[t + 2] = lines[s]; rgba[t + 3] = lines[s + 1]
+      rgba[t] = rgba[t + 1] = rgba[t + 2] = lines[s]
+      rgba[t + 3] = lines[s + 1]
     }
   }
   return { width, height, rgba }

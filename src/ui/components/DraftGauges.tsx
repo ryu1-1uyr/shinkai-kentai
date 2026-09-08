@@ -37,9 +37,7 @@ export function DraftGauges({ s }: { s: GameState }) {
             <div className="gauge">
               <div className="gauge-fill" style={{ width: `${pct}%` }} />
             </div>
-            <span className="gauge-left">
-              {isFinite(left) ? `あと ${fmt(left)}${r.unit}` : '打ち止め'}
-            </span>
+            <span className="gauge-left">{isFinite(left) ? `あと ${fmt(left)}${r.unit}` : '打ち止め'}</span>
           </div>
         )
       })}

@@ -2,13 +2,7 @@ import { useRef } from 'react'
 import { BUILDINGS, costOf } from '../../game/buildings.ts'
 import { totalSharks } from '../../game/inventory.ts'
 import { clickValue, critChance, critMult, cultureRate, launchRate, sharkRate } from '../../game/tick.ts'
-import {
-  buy,
-  getAutoBuyTarget,
-  getConfig,
-  manualClick,
-  setAutoBuyTarget,
-} from '../../store/gameStore.ts'
+import { buy, getAutoBuyTarget, getConfig, manualClick, setAutoBuyTarget } from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
 import { DraftGauges } from './DraftGauges.tsx'
@@ -16,12 +10,18 @@ import { Sprite } from './Sprite.tsx'
 
 function effectText(id: string, cfg: ReturnType<typeof getConfig>): string {
   switch (id) {
-    case 'tank': return `培養液 +1.0/s・クリック +${cfg.click.perTankBonus}`
-    case 'feeder': return '培養液 +10/s'
-    case 'breeder': return `サメ +0.8/s（培養液 ${cfg.shark.cultureCost}/体）`
-    case 'accelerator': return 'サメ生産 +20%'
-    case 'launcher': return '投入速度 +15/s'
-    default: return ''
+    case 'tank':
+      return `培養液 +1.0/s・クリック +${cfg.click.perTankBonus}`
+    case 'feeder':
+      return '培養液 +10/s'
+    case 'breeder':
+      return `サメ +0.8/s（培養液 ${cfg.shark.cultureCost}/体）`
+    case 'accelerator':
+      return 'サメ生産 +20%'
+    case 'launcher':
+      return '投入速度 +15/s'
+    default:
+      return ''
   }
 }
 

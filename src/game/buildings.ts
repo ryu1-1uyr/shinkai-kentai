@@ -17,6 +17,8 @@ export type BuildingDef = {
   clickBonus?: boolean
 }
 
+// 表として読むために整形を止めている（1 行 = 1 設備）
+// prettier-ignore
 export const BUILDINGS: BuildingDef[] = [
   { id: 'tank',        name: '培養槽',   baseCost: 10,   growth: 1.13, cultureRate: 1, clickBonus: true },
   { id: 'feeder',      name: '給餌装置', baseCost: 120,  growth: 1.14, cultureRate: 10 },

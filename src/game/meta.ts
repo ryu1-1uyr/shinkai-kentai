@@ -279,7 +279,14 @@ export const UNLOCKS: UnlockDef[] = [
     cost: 900,
     kind: 'qol',
   },
-  { id: 'speed4', name: '倍速 ×4', detail: '実験の進行を 4 倍速にできる', cost: 2000, kind: 'qol', requires: 'speed2' },
+  {
+    id: 'speed4',
+    name: '倍速 ×4',
+    detail: '実験の進行を 4 倍速にできる',
+    cost: 2000,
+    kind: 'qol',
+    requires: 'speed2',
+  },
   {
     id: 'autoBuyAll',
     name: 'AI 発注',
@@ -568,7 +575,7 @@ export function nodeDetail(m: MetaState, id: string): string {
     const lv = m.levels[id] ?? 0
     return n.detail(Math.min(lv + 1, n.maxLevel))
   }
-  return UNLOCK_BY_ID.get(id)?.detail ?? ""
+  return UNLOCK_BY_ID.get(id)?.detail ?? ''
 }
 
 /** 購入できるか。前提・上限・所持予算をすべて見る */

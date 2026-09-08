@@ -35,11 +35,7 @@ export type SimResult = {
  * 提示中のドラフトから 1 枚選ぶ。
  * 突然変異は方針関数に任せ、研究方針は別の基準で選ぶ。
  */
-function pickDraft(
-  s: GameState,
-  cfg: Config,
-  chooser: ReturnType<typeof makeDraftChooser>,
-): number {
+function pickDraft(s: GameState, cfg: Config, chooser: ReturnType<typeof makeDraftChooser>): number {
   const d = s.pendingDraft!
   return d.kind === 'mutation' ? chooser(d.offers, s, cfg) : pickPolicy(d.offers)
 }
@@ -59,7 +55,8 @@ export function simulate(opts: SimOptions = {}): SimResult {
     tick(s, input, cfg)
     if (s.pendingDraft) applyDraft(s, cfg, pickDraft(s, cfg, chooser))
     // 購入判断は 1 秒に 1 回で十分（毎ティック回すと無駄が大きい）
-    if (Math.round(s.t / dt) % cfg.tickHz === 0) autoBuy(s, cfg, ratio, cultureRate(s) + clickEV(s, cfg) * input.clicksPerSec)
+    if (Math.round(s.t / dt) % cfg.tickHz === 0)
+      autoBuy(s, cfg, ratio, cultureRate(s) + clickEV(s, cfg) * input.clicksPerSec)
   }
 
   const stacks = [...s.inv.entries()]
@@ -80,9 +77,7 @@ export function simulate(opts: SimOptions = {}): SimResult {
     leftover: totalSharks(s.inv),
     expPower: expectedPower(s.ranks, cfg),
     draftCount: s.draftCount,
-    ranks: [...s.ranks.entries()]
-      .map(([id, r]) => `${MUTATION_BY_ID.get(id)!.name}R${r}`)
-      .join(' '),
+    ranks: [...s.ranks.entries()].map(([id, r]) => `${MUTATION_BY_ID.get(id)!.name}R${r}`).join(' '),
     topStacks: stacks,
   }
 }
@@ -185,8 +180,9 @@ if (mode === 'trace') {
   console.log('\n  t   phase     培養液    施設(培/餌/繁/加/射)   生産   在庫     戦果   E[pw]  深度 残時間')
   while (s.phase !== 'over' && s.t < 600) {
     tick(s, input, cfg)
-        if (s.pendingDraft) applyDraft(s, cfg, pickDraft(s, cfg, chooser))
-    if (Math.round(s.t / dt) % cfg.tickHz === 0) autoBuy(s, cfg, ratio, cultureRate(s) + clickEV(s, cfg) * input.clicksPerSec)
+    if (s.pendingDraft) applyDraft(s, cfg, pickDraft(s, cfg, chooser))
+    if (Math.round(s.t / dt) % cfg.tickHz === 0)
+      autoBuy(s, cfg, ratio, cultureRate(s) + clickEV(s, cfg) * input.clicksPerSec)
     if (s.t >= nextLog) {
       nextLog += 10
       console.log(

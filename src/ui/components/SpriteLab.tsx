@@ -72,7 +72,9 @@ export function SpriteLab({ onClose }: { onClose: () => void }) {
 
         <div className="panel-title">自動生成された名前の確認</div>
         <div className="empty-note">
-          {COMBOS.slice(0, 4).map(([mask]) => nameOfMask(mask)).join(' / ')}
+          {COMBOS.slice(0, 4)
+            .map(([mask]) => nameOfMask(mask))
+            .join(' / ')}
         </div>
       </div>
     </div>

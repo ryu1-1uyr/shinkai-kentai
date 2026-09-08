@@ -21,7 +21,7 @@ export function HUD() {
         </div>
       </div>
 
-      <div className="speed" style={{ marginRight: "auto" }}>
+      <div className="speed" style={{ marginRight: 'auto' }}>
         {SPEEDS.filter((v) => v <= s.meta.maxSpeed).map((v) => (
           <button key={v} data-active={speed === v} onClick={() => setSpeed(v)}>
             ×{v}

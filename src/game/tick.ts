@@ -64,9 +64,7 @@ export function clickValue(s: GameState, cfg: Config): number {
   // これがあると、序盤しか効かなかったクリックが後半まで意味を持つ
   const fx = s.policyFx
   const stock =
-    fx.clickPerStock > 0
-      ? Math.min(fx.clickPerStockCap, (totalSharks(s.inv) / 10) * fx.clickPerStock)
-      : 0
+    fx.clickPerStock > 0 ? Math.min(fx.clickPerStockCap, (totalSharks(s.inv) / 10) * fx.clickPerStock) : 0
   return cfg.click.base * (1 + tanks * cfg.click.perTankBonus) * s.meta.clickMult * (1 + stock)
 }
 
@@ -361,8 +359,7 @@ export function applyDraft(s: GameState, cfg: Config, index: number): void {
     refreshBirthDist(s, cfg)
     pushLog(s, 'policy', `${chosen.name} を採用  R${s.policies.get(chosen.id)}`)
     s.policyCount += 1
-    s.nextPolicyAt +=
-      cfg.policy.thresholdBase * Math.pow(cfg.policy.thresholdGrowth, s.policyCount)
+    s.nextPolicyAt += cfg.policy.thresholdBase * Math.pow(cfg.policy.thresholdGrowth, s.policyCount)
   }
   s.pendingDraft = null
 }

@@ -22,16 +22,10 @@ export function InvasionPanel() {
             value={Math.ceil(left).toString()}
             caption="侵略開始まで"
           />
-          <p className="idle-note">
-            検体は投入するまで失われない。いま生産した分はそのまま戦力になる。
-          </p>
+          <p className="idle-note">検体は投入するまで失われない。いま生産した分はそのまま戦力になる。</p>
         </div>
 
-        <LogPanel
-          s={s}
-          title="観測記録"
-          empty="まだ記録がない。検体を生産すると実験機会が訪れる。"
-        />
+        <LogPanel s={s} title="観測記録" empty="まだ記録がない。検体を生産すると実験機会が訪れる。" />
       </div>
     )
   }
@@ -70,7 +64,9 @@ export function InvasionPanel() {
         </div>
 
         <div className="launch-info">
-          <span>破壊 {s.destroyed} / {total}</span>
+          <span>
+            破壊 {s.destroyed} / {total}
+          </span>
           <span>突破深度 {s.clearedDepth}</span>
         </div>
       </div>

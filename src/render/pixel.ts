@@ -75,7 +75,14 @@ export function drawBody(
     const x = BODY_X + i
     px(ctx, x, MID_Y - h, 1, h * 2, opts.body ?? PALETTE.body)
     // 腹側を明るく
-    px(ctx, x, MID_Y + h - Math.max(1, Math.floor(h * 0.45)), 1, Math.max(1, Math.floor(h * 0.45)), opts.belly ?? PALETTE.belly)
+    px(
+      ctx,
+      x,
+      MID_Y + h - Math.max(1, Math.floor(h * 0.45)),
+      1,
+      Math.max(1, Math.floor(h * 0.45)),
+      opts.belly ?? PALETTE.belly,
+    )
   }
 }
 
@@ -145,13 +152,7 @@ export function tintBands(
 }
 
 /** 画素単位で色味を寄せる。パレット変化の合成に使う */
-export function tint(
-  ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
-  rgb: RGB,
-  amount: number,
-): void {
+export function tint(ctx: CanvasRenderingContext2D, w: number, h: number, rgb: RGB, amount: number): void {
   const img = ctx.getImageData(0, 0, w, h)
   const d = img.data
   for (let i = 0; i < d.length; i += 4) {
@@ -182,7 +183,12 @@ export function outline(
       const i = at(x, y)
       if (src[i + 3] !== 0) continue
       let near = false
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      for (const [dx, dy] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as const) {
         const nx = x + dx
         const ny = y + dy
         if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue

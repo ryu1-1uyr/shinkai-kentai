@@ -23,13 +23,14 @@ for (const d of depths) hist.set(d, (hist.get(d) ?? 0) + 1)
 for (const d of [...hist.keys()].sort((a, b) => a - b)) {
   console.log(`  深度 ${String(d).padStart(2)} : ${'#'.repeat(hist.get(d)!)} (${hist.get(d)})`)
 }
-console.log(`\n  平均 ${mean.toFixed(2)}  標準偏差 ${sd.toFixed(2)}  レンジ ${Math.min(...depths)}〜${Math.max(...depths)}`)
+console.log(
+  `\n  平均 ${mean.toFixed(2)}  標準偏差 ${sd.toFixed(2)}  レンジ ${Math.min(...depths)}〜${Math.max(...depths)}`,
+)
 
 const legend = results.filter((r) => r.hasLegend)
 const rare = results.filter((r) => !r.hasLegend && r.hasRare)
 const none = results.filter((r) => !r.hasLegend && !r.hasRare)
-const avg = (xs: Row[]) =>
-  xs.length ? (xs.reduce((a, b) => a + b.depth, 0) / xs.length).toFixed(2) : '-'
+const avg = (xs: Row[]) => (xs.length ? (xs.reduce((a, b) => a + b.depth, 0) / xs.length).toFixed(2) : '-')
 
 console.log('\n=== 引いたレア度別の到達深度 ===\n')
 console.log(`  レジェンダリーを引いた   ${String(legend.length).padStart(2)} 回 / 平均深度 ${avg(legend)}`)

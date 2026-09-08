@@ -20,6 +20,8 @@ export type Air = {
 }
 
 /** 深度ごとの基準色。あいだは線形に混ぜる */
+// 表として読むために整形を止めている（1 行 = 1 深度帯）
+// prettier-ignore
 const STOPS: Array<{ d: number; air: Air }> = [
   { d: 0, air: { top: [20, 52, 58], bottom: [4, 8, 10], accent: [69, 224, 200] } },   // 培養槽の中
   { d: 2, air: { top: [15, 43, 51], bottom: [3, 7, 10], accent: [69, 224, 200] } },   // 沿岸
