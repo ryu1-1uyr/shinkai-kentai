@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { BUILDINGS, costOf } from '../../game/buildings.ts'
 import { totalSharks } from '../../game/inventory.ts'
-import { clickValue, cultureRate, launchRate, sharkRate } from '../../game/tick.ts'
+import { clickValue, critChance, critMult, cultureRate, launchRate, sharkRate } from '../../game/tick.ts'
 import {
   buy,
   getAutoBuyTarget,
@@ -37,9 +37,7 @@ export function ProducePanel() {
    * React の再描画には乗せず、DOM を直接生やして CSS で消す。
    */
   const onCollect = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const base = clickValue(s, cfg)
-    const crit = manualClick()
-    const gained = base * (crit ? 2 : 1)
+    const { gained, crit } = manualClick()
     const host = areaRef.current
     if (!host) return
     const r = host.getBoundingClientRect()
@@ -58,12 +56,19 @@ export function ProducePanel() {
     host.classList.add('is-hit')
   }
 
+  const crit = critChance(s)
+
   return (
     <div className="col area-produce">
       <button className="click-area" ref={areaRef} onClick={onCollect}>
         <Sprite kind="resource" id="culture" size={48} />
         <span className="click-label">培養液を採取</span>
         <span className="click-hint">+{fmt(clickValue(s, cfg))} / クリック</span>
+        {crit > 0 && (
+          <span className="click-crit">
+            会心 {Math.round(crit * 100)}% ×{critMult(s).toFixed(1)}
+          </span>
+        )}
       </button>
 
       <div className="panel">

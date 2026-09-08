@@ -38,7 +38,7 @@ export const POLICIES: PolicyDef[] = [
   {
     id: 'overdraw',
     name: '過剰採取',
-    detail: (r) => `手動採取の ${Math.min(75, 25 * r)}% が 2 倍になる`,
+    detail: (r) => `手動採取が ${Math.min(75, 25 * r)}% の確率で会心する`,
     stackable: true,
     maxRank: 3,
   },
@@ -112,7 +112,7 @@ export const POLICY_BY_ID = new Map(POLICIES.map((p) => [p.id, p]))
 export type PolicyRanks = Map<PolicyId, number>
 
 export type PolicyEffects = {
-  /** 手動採取が 2 倍になる確率 */
+  /** 手動採取が会心する確率。恒久強化の会心率に加算される */
   clickCrit: number
   /** 在庫 10 体あたりのクリック倍率加算 */
   clickPerStock: number

@@ -12,7 +12,7 @@ import {
   UNLOCKS,
 } from '../game/meta.ts'
 import { createState, type GameState } from '../game/state.ts'
-import { applyDraft, clickValue, rerollDraft, tick } from '../game/tick.ts'
+import { applyDraft, clickValue, critChance, critMult, rerollDraft, tick } from '../game/tick.ts'
 import { loadMeta, resetMeta, saveMeta } from '../meta/save.ts'
 
 /**
@@ -142,17 +142,18 @@ export function wipeMeta(): void {
 // --- プレイヤー操作 -------------------------------------------------------
 
 /**
- * 手動採取。研究方針「過剰採取」を取っていると確率で 2 倍になる。
- * 会心したかを返すので、演出側で見せ方を変えられる。
+ * 手動採取。恒久強化「採取の勘」と研究方針「過剰採取」の合計確率で会心する。
+ * 得た量と会心したかを返すので、呼び出し側が同じ計算をやり直さずに演出できる。
  */
-export function manualClick(): boolean {
-  if (state.phase === 'over' || state.pendingDraft) return false
-  const crit = state.policyFx.clickCrit > 0 && Math.random() < state.policyFx.clickCrit
-  const gained = clickValue(state, cfg) * (crit ? 2 : 1)
+export function manualClick(): { gained: number; crit: boolean } {
+  if (state.phase === 'over' || state.pendingDraft) return { gained: 0, crit: false }
+  const chance = critChance(state)
+  const crit = chance > 0 && Math.random() < chance
+  const gained = clickValue(state, cfg) * (crit ? critMult(state) : 1)
   state.culture += gained
   state.cultureTotal += gained
   emit()
-  return crit
+  return { gained, crit }
 }
 
 export function canAfford(def: BuildingDef, owned: number): boolean {

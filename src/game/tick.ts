@@ -70,6 +70,25 @@ export function clickValue(s: GameState, cfg: Config): number {
   return cfg.click.base * (1 + tanks * cfg.click.perTankBonus) * s.meta.clickMult * (1 + stock)
 }
 
+/** 手動採取が会心する確率。恒久強化と研究方針「過剰採取」を足して 90% で頭打ち */
+export function critChance(s: GameState): number {
+  return Math.min(0.9, s.meta.critChance + s.policyFx.clickCrit)
+}
+
+export function critMult(s: GameState): number {
+  return s.meta.critMult
+}
+
+/**
+ * 会心を均した手動採取 1 回の期待値。
+ *
+ * 会心を**手動採取にだけ**乗せているのは、能動的に叩く操作を
+ * 自動生産より割の良いものにするため。自動採取装置は会心しない。
+ */
+export function clickEV(s: GameState, cfg: Config): number {
+  return clickValue(s, cfg) * (1 + critChance(s) * (critMult(s) - 1))
+}
+
 export function sharkRate(s: GameState): number {
   let base = 0
   let mult = 1
@@ -196,7 +215,9 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
 
   // --- 培養液 ---
   const gained =
-    cultureRate(s) * dt + clickValue(s, cfg) * (input.clicksPerSec + s.meta.autoClick) * dt
+    cultureRate(s) * dt +
+    clickEV(s, cfg) * input.clicksPerSec * dt +
+    clickValue(s, cfg) * s.meta.autoClick * dt
   s.culture += gained
   s.cultureTotal += gained
 

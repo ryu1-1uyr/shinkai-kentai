@@ -115,6 +115,8 @@
 .click-area .sprite { --sprite-size: 48px; }
 .click-label { font-family: var(--font-display); font-size: var(--fs-lg); letter-spacing: 0.04em; }
 .click-hint { color: var(--c-text-dim); font-size: var(--fs-xs); font-family: var(--font-num); }
+/* 会心は能動的に叩くことへの見返り。金色にして自動生産と質を分ける */
+.click-crit { color: var(--c-legendary); font-size: var(--fs-xs); font-family: var(--font-num); }
 
 /* 押した瞬間の脈動 */
 .click-area.is-hit { animation: click-pulse 180ms steps(3, end); }

@@ -51,6 +51,22 @@ export const NUMERIC_UPGRADES: NumericUpgrade[] = [
     maxLevel: 20,
   },
   {
+    id: 'critChance',
+    name: '採取の勘',
+    detail: (lv) => `手動採取の ${5 * lv}% が会心になる`,
+    baseCost: 120,
+    costGrowth: 1.9,
+    maxLevel: 10,
+  },
+  {
+    id: 'critPower',
+    name: '一点集中',
+    detail: (lv) => `会心した採取が ×${(2 + 0.7 * lv).toFixed(1)}`,
+    baseCost: 400,
+    costGrowth: 2.0,
+    maxLevel: 10,
+  },
+  {
     id: 'startTanks',
     name: '培養槽の常設',
     detail: (lv) => `開始時に培養槽を ${lv} 個持つ`,
@@ -252,7 +268,7 @@ export const UNLOCKS: UnlockDef[] = [
   {
     id: 'autoClick',
     name: '自動採取装置',
-    detail: '毎秒 5 回ぶんの培養液を自動で採取する',
+    detail: '毎秒 5 回ぶんの培養液を自動で採取する（会心はしない）',
     cost: 900,
     kind: 'qol',
   },
@@ -277,6 +293,10 @@ export type MetaEffects = {
   startTanks: number
   startSharks: number
   clickMult: number
+  /** 手動採取が会心する確率。研究方針「過剰採取」と加算される */
+  critChance: number
+  /** 会心したときの倍率 */
+  critMult: number
   cultureMult: number
   sharkRateMult: number
   launchMult: number
@@ -330,6 +350,8 @@ export function metaEffects(m: MetaState): MetaEffects {
     startTanks: lv('startTanks'),
     startSharks: lv('startSharks') * 25,
     clickMult: (1 + 0.3 * lv('clickPower')) * (has('doubleClick') ? 2 : 1),
+    critChance: 0.05 * lv('critChance'),
+    critMult: 2 + 0.7 * lv('critPower'),
     cultureMult: 1 + 0.25 * lv('cultureRate'),
     sharkRateMult: 1 + 0.25 * lv('sharkRate'),
     launchMult: 1 + 0.2 * lv('launchRate'),
@@ -449,45 +471,47 @@ export type TreeNode = {
 }
 
 export const TREE: TreeNode[] = [
-  // 培養 — 培養液の生産量
+  // 培養 — 培養液の生産量。ここだけ「自動で増やす」と「手で殴る」に分かれる
   { id: 'clickPower', branch: 'prod', col: 0, row: 0, requires: [] },
   { id: 'cultureRate', branch: 'prod', col: 0, row: 1, requires: ['clickPower'] },
   { id: 'doubleClick', branch: 'prod', col: 0, row: 2, requires: ['cultureRate'] },
   { id: 'tankSynergy', branch: 'prod', col: 0, row: 3, requires: ['doubleClick'] },
   { id: 'feederSynergy', branch: 'prod', col: 0, row: 4, requires: ['tankSynergy'] },
+  { id: 'critChance', branch: 'prod', col: 1, row: 1, requires: ['clickPower'] },
+  { id: 'critPower', branch: 'prod', col: 1, row: 2, requires: ['critChance'] },
 
   // 検体 — 生産速度と戦闘力
-  { id: 'startTanks', branch: 'spec', col: 1, row: 0, requires: [] },
-  { id: 'sharkRate', branch: 'spec', col: 1, row: 1, requires: ['startTanks'] },
-  { id: 'startSharks', branch: 'spec', col: 1, row: 2, requires: ['sharkRate'] },
-  { id: 'sharkPower', branch: 'spec', col: 1, row: 3, requires: ['startSharks'] },
-  { id: 'breederSynergy', branch: 'spec', col: 1, row: 4, requires: ['sharkPower'] },
+  { id: 'startTanks', branch: 'spec', col: 2, row: 0, requires: [] },
+  { id: 'sharkRate', branch: 'spec', col: 2, row: 1, requires: ['startTanks'] },
+  { id: 'startSharks', branch: 'spec', col: 2, row: 2, requires: ['sharkRate'] },
+  { id: 'sharkPower', branch: 'spec', col: 2, row: 3, requires: ['startSharks'] },
+  { id: 'breederSynergy', branch: 'spec', col: 2, row: 4, requires: ['sharkPower'] },
 
   // 侵略 — 投入速度と破壊
-  { id: 'launchRate', branch: 'raid', col: 2, row: 0, requires: [] },
-  { id: 'lastStand', branch: 'raid', col: 2, row: 1, requires: ['launchRate'] },
-  { id: 'launcherSynergy', branch: 'raid', col: 2, row: 2, requires: ['lastStand'] },
-  { id: 'reservePower', branch: 'raid', col: 2, row: 3, requires: ['launcherSynergy'] },
-  { id: 'chainCollapse', branch: 'raid', col: 2, row: 4, requires: ['reservePower'] },
+  { id: 'launchRate', branch: 'raid', col: 3, row: 0, requires: [] },
+  { id: 'lastStand', branch: 'raid', col: 3, row: 1, requires: ['launchRate'] },
+  { id: 'launcherSynergy', branch: 'raid', col: 3, row: 2, requires: ['lastStand'] },
+  { id: 'reservePower', branch: 'raid', col: 3, row: 3, requires: ['launcherSynergy'] },
+  { id: 'chainCollapse', branch: 'raid', col: 3, row: 4, requires: ['reservePower'] },
 
   // 実験 — ドラフトへの干渉
-  { id: 'reroll', branch: 'lab', col: 3, row: 0, requires: [] },
-  { id: 'earlyDraft', branch: 'lab', col: 3, row: 1, requires: ['reroll'] },
-  { id: 'extraOffer', branch: 'lab', col: 3, row: 2, requires: ['earlyDraft'] },
-  { id: 'prototype', branch: 'lab', col: 3, row: 3, requires: ['extraOffer'] },
+  { id: 'reroll', branch: 'lab', col: 4, row: 0, requires: [] },
+  { id: 'earlyDraft', branch: 'lab', col: 4, row: 1, requires: ['reroll'] },
+  { id: 'extraOffer', branch: 'lab', col: 4, row: 2, requires: ['earlyDraft'] },
+  { id: 'prototype', branch: 'lab', col: 4, row: 3, requires: ['extraOffer'] },
 
   // 系統 — 変異プールの拡張
-  { id: 'family_abyss', branch: 'fam', col: 4, row: 0, requires: [], preview: 'tentacle' },
-  { id: 'family_mech', branch: 'fam', col: 4, row: 1, requires: ['family_abyss'], preview: 'mecha' },
-  { id: 'family_cosmic', branch: 'fam', col: 4, row: 2, requires: ['family_mech'], preview: 'alien' },
-  { id: 'family_disaster', branch: 'fam', col: 4, row: 3, requires: ['family_cosmic'], preview: 'tornado' },
+  { id: 'family_abyss', branch: 'fam', col: 5, row: 0, requires: [], preview: 'tentacle' },
+  { id: 'family_mech', branch: 'fam', col: 5, row: 1, requires: ['family_abyss'], preview: 'mecha' },
+  { id: 'family_cosmic', branch: 'fam', col: 5, row: 2, requires: ['family_mech'], preview: 'alien' },
+  { id: 'family_disaster', branch: 'fam', col: 5, row: 3, requires: ['family_cosmic'], preview: 'tornado' },
 
-  // 運用 — ここだけ枝分かれする
-  { id: 'speed2', branch: 'ops', col: 5, row: 0, requires: [] },
-  { id: 'speed4', branch: 'ops', col: 6, row: 1, requires: ['speed2'] },
-  { id: 'autoClick', branch: 'ops', col: 5, row: 1, requires: ['speed2'] },
-  { id: 'autoBuyOne', branch: 'ops', col: 5, row: 2, requires: ['autoClick'] },
-  { id: 'autoBuyAll', branch: 'ops', col: 5, row: 3, requires: ['autoBuyOne'] },
+  // 運用 — 周回の速度
+  { id: 'speed2', branch: 'ops', col: 6, row: 0, requires: [] },
+  { id: 'speed4', branch: 'ops', col: 7, row: 1, requires: ['speed2'] },
+  { id: 'autoClick', branch: 'ops', col: 6, row: 1, requires: ['speed2'] },
+  { id: 'autoBuyOne', branch: 'ops', col: 6, row: 2, requires: ['autoClick'] },
+  { id: 'autoBuyAll', branch: 'ops', col: 6, row: 3, requires: ['autoBuyOne'] },
 ]
 
 export const TREE_BY_ID = new Map(TREE.map((n) => [n.id, n]))

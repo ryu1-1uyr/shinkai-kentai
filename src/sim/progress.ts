@@ -3,6 +3,7 @@ import {
   buyNumeric,
   buyUnlock,
   createMeta,
+  nodeUnlocked,
   NUMERIC_UPGRADES,
   UNLOCK_BY_ID,
   UNLOCKS,
@@ -29,6 +30,8 @@ function spend(meta: ReturnType<typeof createMeta>): string[] {
     for (const u of NUMERIC_UPGRADES) {
       const lv = meta.levels[u.id] ?? 0
       if (lv >= u.maxLevel) continue
+      // 前提を満たしていないものを選ぶと buyNumeric が失敗し、同じ候補を選び続けて空回りする
+      if (!nodeUnlocked(meta, u.id)) continue
       const c = upgradeCost(u, lv)
       if (c <= meta.budget && c < bestCost) {
         bestCost = c
