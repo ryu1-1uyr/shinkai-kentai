@@ -98,15 +98,43 @@
     font-size: var(--fs-md);
   }
 
-  /* 設備は触る場所なので、資源より先に高さを確保する */
+  /*
+   * 設備の購入はこのゲームの根幹なので、資源より先に高さを確保する。
+   * 資源は読むだけなので、あふれたら中でスクロールさせる。
+   */
   .area-produce > .panel.scroll {
-    min-height: 116px;
+    min-height: 140px;
   }
   .area-produce > .panel:not(.scroll) {
     flex: 0 1 auto;
     min-height: 0;
     overflow-y: auto;
     gap: 2px;
+  }
+  /* 行にアイコンと名前があるので、資源パネルの見出しは無くても読める */
+  .area-produce > .panel:not(.scroll) > .panel-title {
+    display: none;
+  }
+  /*
+   * 累計生産は落とす。次のドラフトまでの距離はゲージが出しているし、
+   * 累計そのものはリザルトで見られる。ここを空けないと戦果が隠れる。
+   */
+  .tally {
+    display: none;
+  }
+
+  /* 保有している突然変異は一覧できれば十分。高さを渡して検体在庫を広く使う */
+  .area-stock > .panel:not(.scroll) {
+    flex: 0 1 auto;
+    max-height: 76px;
+    overflow-y: auto;
+  }
+  .mut {
+    padding: 1px var(--sp-1);
+    gap: 2px;
+  }
+  .mut .sprite {
+    --sprite-size: 14px;
   }
   .buy {
     padding: var(--sp-1) var(--sp-2);
@@ -212,9 +240,15 @@
   .card .sprite {
     --sprite-size: 24px;
   }
-  /* 変異のサメ絵は 40px 固定で描かれるので、縦を詰めるために縮める */
+  /*
+   * 変異のサメ絵を縮める。
+   * カードは縦並びの flex なので、指定しないと横幅いっぱいに引き伸ばされる。
+   * 高さだけ指定すると縦横比が壊れてサメが潰れるため、幅は auto で追従させる。
+   */
   .card .shark-icon {
-    height: 26px;
+    height: 28px;
+    width: auto;
+    align-self: center;
   }
   .card-name {
     font-size: var(--fs-sm);
