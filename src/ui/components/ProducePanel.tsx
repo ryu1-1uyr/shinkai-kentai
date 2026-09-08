@@ -2,7 +2,14 @@ import { useRef } from 'react'
 import { BUILDINGS, costOf } from '../../game/buildings.ts'
 import { totalSharks } from '../../game/inventory.ts'
 import { clickValue, critChance, critMult, cultureRate, launchRate, sharkRate } from '../../game/tick.ts'
-import { buy, getAutoBuyTarget, getConfig, manualClick, setAutoBuyTarget } from '../../store/gameStore.ts'
+import {
+  buy,
+  getAutoBuyMode,
+  getAutoBuyTarget,
+  getConfig,
+  manualClick,
+  setAutoBuyTarget,
+} from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
 import { DraftGauges } from './DraftGauges.tsx'
@@ -124,10 +131,11 @@ export function ProducePanel() {
                   <span className="buy-owned">所持 {s.buildings[i]}</span>
                 </span>
               </button>
-              {s.meta.autoBuyOne && !s.meta.autoBuyAll && (
+              {s.meta.autoBuyOne && (
                 <button
                   className="buy-auto"
                   data-on={auto}
+                  data-idle={getAutoBuyMode() !== 'one'}
                   title="定期発注の対象にする"
                   aria-label={`${b.name}を定期発注する`}
                   onClick={() => setAutoBuyTarget(i)}

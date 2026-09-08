@@ -168,7 +168,7 @@ export function LabScreen() {
                 {nodeName(n.id)}
                 {numeric && (
                   <span className="node-lv">
-                    {lv}/{max}
+                    {lv}/{isFinite(max) ? max : '∞'}
                   </span>
                 )}
               </span>

@@ -34,7 +34,14 @@ let running = false
 let screen: Screen = 'run'
 /** 直近のランで得た研究予算。リザルト表示に使う */
 let lastAward = 0
-let autoBuyAllOn = true
+/**
+ * 自動発注の動作。
+ *  off … 自分で買う
+ *  one … 定期発注。指定した 1 種類だけを買う（購入配分の判断は残る）
+ *  all … AI 発注。買える設備をすべて安い順に買う
+ */
+export type AutoBuyMode = 'off' | 'one' | 'all'
+let autoBuyMode: AutoBuyMode = 'all'
 /** 定期発注で自動購入する設備。BUILDINGS の添字。null なら未設定 */
 let autoBuyTarget: number | null = null
 /** このランの報酬を確定済みか */
@@ -93,12 +100,19 @@ export function getLastAward(): number {
   return lastAward
 }
 
-export function isAutoBuyAllOn(): boolean {
-  return autoBuyAllOn
+/**
+ * 実際に効く発注モード。
+ * 未解禁のモードを選んだままになることがあるので、持っているものへ落とす。
+ */
+export function getAutoBuyMode(): AutoBuyMode {
+  const m = state.meta
+  if (autoBuyMode === 'all' && !m.autoBuyAll) return m.autoBuyOne ? 'one' : 'off'
+  if (autoBuyMode === 'one' && !m.autoBuyOne) return 'off'
+  return autoBuyMode
 }
 
-export function toggleAutoBuyAll(): void {
-  autoBuyAllOn = !autoBuyAllOn
+export function setAutoBuyMode(mode: AutoBuyMode): void {
+  autoBuyMode = mode
   emit()
 }
 
@@ -109,6 +123,8 @@ export function getAutoBuyTarget(): number | null {
 /** 同じ設備をもう一度指定すると解除する */
 export function setAutoBuyTarget(index: number | null): void {
   autoBuyTarget = autoBuyTarget === index ? null : index
+  // 対象を選ぶのは定期発注を使いたいということなので、モードも合わせる
+  if (autoBuyTarget !== null && state.meta.autoBuyOne) autoBuyMode = 'one'
   emit()
 }
 
@@ -160,14 +176,10 @@ export function canAfford(def: BuildingDef, owned: number): boolean {
   return state.culture >= costOf(def, owned)
 }
 
-/**
- * 自動発注。
- *  AI 発注   … 買える設備をすべて安い順に買う
- *  定期発注  … 指定した 1 種類だけを買う（購入配分の判断は残る）
- */
+/** 自動発注。動作は AutoBuyMode を参照 */
 function runAutoBuy(): void {
-  const m = state.meta
-  if (m.autoBuyAll && autoBuyAllOn) {
+  const mode = getAutoBuyMode()
+  if (mode === 'all') {
     for (let guard = 0; guard < 60; guard++) {
       let best = -1
       let bestCost = Infinity
@@ -185,7 +197,7 @@ function runAutoBuy(): void {
     return
   }
 
-  if (m.autoBuyOne && autoBuyTarget !== null) {
+  if (mode === 'one' && autoBuyTarget !== null) {
     const i = autoBuyTarget
     for (let guard = 0; guard < 60; guard++) {
       const c = costOf(BUILDINGS[i], state.buildings[i])

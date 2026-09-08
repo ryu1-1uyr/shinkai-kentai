@@ -148,6 +148,34 @@
   background: var(--c-panel-hi);
 }
 
+/* 発注モードの切り替え。倍速と同じ見た目で、HUD の同じ列に並べる */
+.autobuy {
+  display: flex;
+  gap: var(--sp-1);
+  margin-left: var(--sp-2);
+  padding-left: var(--sp-2);
+  border-left: 1px solid var(--c-line);
+}
+.autobuy button {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  background: transparent;
+  color: var(--c-text-dim);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-1);
+  padding: 2px var(--sp-2);
+}
+.autobuy button[data-active='true'] {
+  color: var(--c-text);
+  border-color: var(--c-line-hi);
+  background: var(--c-panel-hi);
+}
+
+/* 定期発注が動いていないあいだ、対象の指定は効いていないことを示す */
+.buy-auto[data-idle='true'] {
+  opacity: 0.35;
+}
+
 /* ---- クリック領域 ----
  * 最初の 60 秒で唯一の操作なので、画面の中で最も大きく・押した感触が返る要素にする。 */
 .click-area {

@@ -38,6 +38,7 @@ export type NumericUpgrade = {
   detail: (lv: number) => string
   baseCost: number
   costGrowth: number
+  /** Infinity なら上限なし */
   maxLevel: number
 }
 
@@ -115,6 +116,54 @@ export const NUMERIC_UPGRADES: NumericUpgrade[] = [
     maxLevel: 25,
   },
 ]
+
+/**
+ * 上限のない強化。
+ *
+ * 到達深度が頭打ちになると研究予算だけが増え続けて使い道がなくなる。
+ * 際限なく積める行き先を用意して、余った予算が腐らないようにする。
+ * 積み上げるとゲームバランスは壊れるが、それは織り込みで許容している。
+ *
+ * コストの伸びを他より緩く（1.55）しているのは、1 ラン ぶんの予算で
+ * まとまった段数が買えるようにするため。1 段ずつしか進まないと
+ * 「予算を使い切った」感触が出ない。
+ */
+export const ENDLESS_UPGRADES: NumericUpgrade[] = [
+  {
+    id: 'endlessCulture',
+    name: '過剰培養',
+    detail: (lv) => `培養液の生産 ×${(1 + 0.5 * lv).toFixed(1)}`,
+    baseCost: 30000,
+    costGrowth: 1.55,
+    maxLevel: Infinity,
+  },
+  {
+    id: 'endlessBreed',
+    name: '過剰繁殖',
+    detail: (lv) => `検体の生産速度 ×${(1 + 0.5 * lv).toFixed(1)}`,
+    baseCost: 40000,
+    costGrowth: 1.55,
+    maxLevel: Infinity,
+  },
+  {
+    id: 'endlessLaunch',
+    name: '過剰射出',
+    detail: (lv) => `投入速度 ×${(1 + 0.5 * lv).toFixed(1)}`,
+    baseCost: 60000,
+    costGrowth: 1.55,
+    maxLevel: Infinity,
+  },
+  {
+    id: 'endlessPower',
+    name: '過剰改造',
+    detail: (lv) => `全検体の戦闘力 ×${(1 + 1.0 * lv).toFixed(1)}`,
+    baseCost: 120000,
+    costGrowth: 1.6,
+    maxLevel: Infinity,
+  },
+]
+
+NUMERIC_UPGRADES.push(...ENDLESS_UPGRADES)
 
 export const NUMERIC_BY_ID = new Map(NUMERIC_UPGRADES.map((u) => [u.id, u]))
 
@@ -368,10 +417,10 @@ export function metaEffects(m: MetaState): MetaEffects {
     clickMult: (1 + 0.3 * lv('clickPower')) * (has('doubleClick') ? 2 : 1),
     critChance: 0.05 * lv('critChance'),
     critMult: 2 + 0.7 * lv('critPower'),
-    cultureMult: 1 + 0.25 * lv('cultureRate'),
-    sharkRateMult: 1 + 0.25 * lv('sharkRate'),
-    launchMult: 1 + 0.2 * lv('launchRate'),
-    powerMult: 1 + 0.4 * lv('sharkPower'),
+    cultureMult: (1 + 0.25 * lv('cultureRate')) * (1 + 0.5 * lv('endlessCulture')),
+    sharkRateMult: (1 + 0.25 * lv('sharkRate')) * (1 + 0.5 * lv('endlessBreed')),
+    launchMult: (1 + 0.2 * lv('launchRate')) * (1 + 0.5 * lv('endlessLaunch')),
+    powerMult: (1 + 0.4 * lv('sharkPower')) * (1 + 1.0 * lv('endlessPower')),
     families,
     maxSpeed: has('speed4') ? 4 : has('speed2') ? 2 : 1,
     autoBuyOne: has('autoBuyOne'),
@@ -464,7 +513,7 @@ export function buyUnlock(m: MetaState, id: string): boolean {
  * 何を伸ばしているのかがプレイヤーの中に残らない。
  * 枝に分けて前提を付けると、序盤にどの方向へ振るかが選択になる。
  */
-export type BranchId = 'prod' | 'spec' | 'raid' | 'lab' | 'fam' | 'ops'
+export type BranchId = 'prod' | 'spec' | 'raid' | 'lab' | 'fam' | 'ops' | 'over'
 
 export const BRANCHES: Record<BranchId, { name: string; sub: string }> = {
   prod: { name: '培養', sub: '培養液を増やす' },
@@ -473,6 +522,7 @@ export const BRANCHES: Record<BranchId, { name: string; sub: string }> = {
   lab: { name: '実験', sub: 'ドラフトを操作する' },
   fam: { name: '系統', sub: '変異の種類を解禁する' },
   ops: { name: '運用', sub: '周回を速くする' },
+  over: { name: '超過', sub: '際限なく積み増す' },
 }
 
 export type TreeNode = {
@@ -530,6 +580,12 @@ export const TREE: TreeNode[] = [
   { id: 'autoClick', branch: 'ops', col: 6, row: 1, requires: ['speed2'] },
   { id: 'autoBuyOne', branch: 'ops', col: 6, row: 2, requires: ['autoClick'] },
   { id: 'autoBuyAll', branch: 'ops', col: 6, row: 3, requires: ['autoBuyOne'] },
+
+  // 超過 — 上限がない。予算が余り始めてからの行き先
+  { id: 'endlessCulture', branch: 'over', col: 8, row: 0, requires: [] },
+  { id: 'endlessBreed', branch: 'over', col: 8, row: 1, requires: ['endlessCulture'] },
+  { id: 'endlessLaunch', branch: 'over', col: 9, row: 1, requires: ['endlessCulture'] },
+  { id: 'endlessPower', branch: 'over', col: 8, row: 2, requires: ['endlessBreed', 'endlessLaunch'] },
 ]
 
 export const TREE_BY_ID = new Map(TREE.map((n) => [n.id, n]))

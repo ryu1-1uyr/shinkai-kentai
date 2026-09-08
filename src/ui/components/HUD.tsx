@@ -1,4 +1,11 @@
-import { getSpeed, isAutoBuyAllOn, setSpeed, type Speed, toggleAutoBuyAll } from '../../store/gameStore.ts'
+import {
+  type AutoBuyMode,
+  getAutoBuyMode,
+  getSpeed,
+  setAutoBuyMode,
+  setSpeed,
+  type Speed,
+} from '../../store/gameStore.ts'
 import { depthName } from '../../game/targets.ts'
 import { mmss } from '../format.ts'
 import { useGame } from '../useGame.ts'
@@ -10,6 +17,13 @@ export function HUD() {
   const speed = getSpeed()
   const name = depthName(s.depth)
   const inCulture = s.phase === 'culture'
+  const autoMode = getAutoBuyMode()
+  // 解禁したモードだけを並べる。1 つしかないなら切り替える意味がないので出さない
+  const autoModes: Array<[AutoBuyMode, string]> = [
+    ['off', '手動'],
+    ...(s.meta.autoBuyOne ? ([['one', '定期発注']] as Array<[AutoBuyMode, string]>) : []),
+    ...(s.meta.autoBuyAll ? ([['all', 'AI 発注']] as Array<[AutoBuyMode, string]>) : []),
+  ]
 
   return (
     <div className="hud">
@@ -27,10 +41,14 @@ export function HUD() {
             ×{v}
           </button>
         ))}
-        {s.meta.autoBuyAll && (
-          <button data-active={isAutoBuyAllOn()} onClick={toggleAutoBuyAll}>
-            AI 発注
-          </button>
+        {autoModes.length > 1 && (
+          <span className="autobuy">
+            {autoModes.map(([mode, label]) => (
+              <button key={mode} data-active={autoMode === mode} onClick={() => setAutoBuyMode(mode)}>
+                {label}
+              </button>
+            ))}
+          </span>
         )}
       </div>
 
