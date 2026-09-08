@@ -317,16 +317,33 @@
 .buy-name {
   display: flex;
   flex-direction: column;
+  /* 効果の 1 行省略を効かせるには、親の縮みを許す必要がある */
+  min-width: 0;
 }
+/*
+ * 効果の説明は 1 行に収める。
+ * 折り返すと行の高さが設備ごとに変わって、一覧としての並びが崩れる。
+ * 読めれば十分な情報なので、名前より一段小さくして幅を稼ぐ。
+ */
 .buy-effect {
   color: var(--c-text-mute);
-  font-size: var(--fs-xs);
+  font-size: 9px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .buy-right {
   margin-left: auto;
   text-align: right;
   display: flex;
   flex-direction: column;
+  /*
+   * 縮ませず、中で折り返させない。狭い列だとここが潰れて「所持 N」が
+   * 折り返し、行の高さが設備ごとに変わって一覧の並びが崩れる。
+   * 余った幅は名前と効果の側へ渡る。
+   */
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .buy-cost {
   font-family: var(--font-num);
