@@ -53,6 +53,8 @@ export type GameState = {
   ranks: MutationRanks
   /** ranks が変わるたびに作り直す出生分布のキャッシュ */
   birthDist: Array<[MutationMask, number]>
+  /** このランで生まれた個体の、変異数の最高記録 */
+  bestTraits: number
   /** mask ごとの戦闘力。ドラフトでランクが動いたときだけ捨てる */
   powerCache: PowerCache
 
@@ -114,6 +116,7 @@ export function createState(cfg: Config, seed: number, meta?: MetaEffects): Game
     births: new Map(),
     ranks: new Map<MutationId, number>(),
     birthDist: [[0, 1]],
+    bestTraits: 0,
     powerCache: new Map(),
     producedTotal: 0,
     nextDraftAt: eff.earlyDraft ? 10 : cfg.mutation.draftThresholdBase,

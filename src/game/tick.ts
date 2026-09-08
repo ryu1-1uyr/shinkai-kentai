@@ -22,6 +22,22 @@ export type TickInput = {
 }
 
 /**
+ * ここを超えると記録の条件を切り替える、取得済み変異の数。
+ *
+ * 変異が増えるほど「レアを含む 3 変異」は当たり前になる。
+ * 実測で、変異 11〜12 種のランでは 1 ラン に 1300〜1500 件の誕生ログが出て、
+ * 40 件の記録が 6 秒で入れ替わり、破壊も深度突破も読めなくなっていた。
+ */
+const LOG_RECORD_FROM = 7
+
+/** その mask が持つ変異の数 */
+function traitCount(mask: MutationMask): number {
+  let n = 0
+  for (const m of MUTATIONS) if (hasMutation(mask, m)) n++
+  return n
+}
+
+/**
  * 記録に残す価値のある個体か。
  * **rare 以上を含み、かつ変異を 3 つ以上併せ持つ**個体だけを対象にする。
  * 条件を緩めると記録が誕生ログで埋まって、破壊や深度突破が読めなくなる。
@@ -233,8 +249,19 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
       const after = before + born * p
       s.births.set(mask, after)
       // 1 体目が生まれた瞬間だけ、珍しい個体を記録に残す
-      if (before < 1 && after >= 1 && isNotable(mask)) {
-        pushLog(s, 'birth', `${nameOfMask(mask)} が誕生`, mask)
+      if (before < 1 && after >= 1) {
+        const traits = traitCount(mask)
+        const record = traits > s.bestTraits
+        if (record) s.bestTraits = traits
+        /*
+         * 変異が少ないうちは「レアを含む 3 変異」で拾う。記録がまだ空で、
+         * 新種が出ること自体が主役だから。
+         * 変異が増えるとその条件は当たり前になるので、
+         * **このランで最多の変異を持つ個体が出たとき**だけに切り替える。
+         * 自己ベストの更新なので、変異を何種取っていても件数が暴れない。
+         */
+        const notable = s.ranks.size < LOG_RECORD_FROM ? isNotable(mask) : record && traits >= 3
+        if (notable) pushLog(s, 'birth', `${nameOfMask(mask)} が誕生`, mask)
       }
     }
   }
