@@ -40,49 +40,72 @@ const GRAVITY = 1100
 const SHARK_H = 20
 
 /**
- * 1 秒あたりに湧かせるサメの数。これを超えたぶんは 1 匹に束ねる。
- * 画面が埋まる密度を保ったまま、それ以上は数ではなく大きさで表す。
- */
-const SPAWN_CAP = 600
-
-/**
- * 束ねた数が 10 倍になるごとに増える大きさ。
+ * 階層ごとに、1 秒あたり何匹を湧かせるか。大きい順。
  *
- * 実測で、到達しうる投入速度は倍速 4 で 1.6M 体/秒あたりが上限で、
- * このとき束ねる数は 2600 ほど。係数 1.0 だと最大でも 88px にしかならず、
- * 建物（92px）を超えないまま終わってしまう。1.5 にすると
- * 束ね 430（超過強化 10 段・倍速 4 で届く）で建物を追い越す。
+ * 束ねた数だけ大きく描くが、**全部を同じ大きさにすると比較対象が消えて
+ * 大きさが伝わらない**。等倍のサメと巨体を同じ画面に混ぜる。
+ *
+ * 湧かせる数は投入速度によらず固定で、投入速度は「1 匹が何匹ぶんか」に吸わせる。
+ * これで画面の密度が最後まで一定に保たれる。
  */
-const SCALE_PER_DECADE = 1.5
-
-/** 大きさの上限。ビュワーの高さを超えると何も見えなくなる */
-const MAX_SCALE = 6
-
-/** 建物より大きい個体の動きの倍率。巨体はゆっくり動くほうが重く見える */
-const GIANT_MOTION = 0.7
+const TIER_SPAWN = [0.4, 1.2, 3, 9]
 
 /**
- * 束ねる見せ方。
- *  log  … 束ねた数の対数に比例して滑らかに大きくなる
- *  step … 10 倍ごとに段階的に大きくなる
+ * 等倍のサメを 1 秒あたり何匹湧かせるか。
+ *
+ * 投入速度がいくら伸びてもこの階層だけは等倍のまま残す。
+ * 全部が大きくなると比べる相手がいなくなって、大きさが伝わらなくなる。
  */
-export type BundleMode = 'log' | 'step'
-let bundleMode: BundleMode = 'log'
+const PLAIN_SPAWN = 80
 
-export function getBundleMode(): BundleMode {
-  return bundleMode
-}
+/** 束ねる意味が出る最小の数。これを下回る階層は使わない */
+const MIN_BUNDLE = 2
 
-export function setBundleMode(m: BundleMode): void {
-  bundleMode = m
-}
+/** 大きさの上限。ビュワーの高さが 132px なのでこれ以上は見えない */
+const MAX_SCALE = 5.5
 
-/** 束ねた数に対する大きさ。段階表示は 10 倍ごとに切り上がる */
+/** 動きの遅さの効き方と下限。遅すぎると投入に追いつかず、画面が実態から離れる */
+const MOTION_EXP = 0.7
+const MIN_MOTION = 0.35
+
+/** 束ねた数に対する大きさ。100 匹で 2 倍、1000 匹で 3 倍、10000 匹で 4 倍 */
 function sharkScale(bundle: number): number {
-  if (bundle <= 1) return 1
-  const decades = Math.log10(bundle)
-  const d = bundleMode === 'log' ? decades : Math.floor(decades)
-  return Math.min(MAX_SCALE, 1 + SCALE_PER_DECADE * d)
+  return Math.min(MAX_SCALE, Math.max(1, Math.log10(bundle)))
+}
+
+/** 大きいほどゆっくり動く。同じ px/秒 だと巨体ほど軽く見えてしまう */
+function motionOf(scale: number): number {
+  return Math.max(MIN_MOTION, 1 / Math.pow(scale, MOTION_EXP))
+}
+
+type Tier = { bundle: number; scale: number; spawn: number }
+
+/**
+ * その投入速度をどう階層に割り振るか。
+ *
+ * 湧かせる数は階層ごとに固定で、投入速度は「1 匹が何匹ぶんか」に吸わせる。
+ * これで画面の密度が最後まで一定に保たれる。
+ * 一番大きい階層の束ね数 `top` は、TIER_SPAWN と等倍の階層で湧かせたときに
+ * ちょうど投入速度ぶんを表せるように決める。
+ * 階層が下がるごとに束ね数は 1/10 になり、大きさは 1 段小さくなる。
+ */
+function tiersFor(rate: number): Tier[] {
+  if (rate <= 0) return []
+  const plain: Tier = { bundle: 1, scale: 1, spawn: Math.min(rate, PLAIN_SPAWN) }
+  if (rate <= PLAIN_SPAWN) return [plain]
+
+  let k = 0
+  for (let i = 0; i < TIER_SPAWN.length; i++) k += TIER_SPAWN[i] / Math.pow(10, i)
+  const top = (rate - PLAIN_SPAWN) / k
+
+  const out: Tier[] = []
+  for (let i = 0; i < TIER_SPAWN.length; i++) {
+    const bundle = top / Math.pow(10, i)
+    if (bundle < MIN_BUNDLE) break
+    out.push({ bundle, scale: sharkScale(bundle), spawn: TIER_SPAWN[i] })
+  }
+  out.push(plain)
+  return out
 }
 
 type P = {
@@ -134,7 +157,9 @@ export function InvasionViewer() {
     ro.observe(canvas)
 
     const parts: P[] = []
-    let acc = 0
+    // 階層ごとの湧かせ残り
+    const accs = TIER_SPAWN.map(() => 0).concat(0)
+
     let last = performance.now()
     let flash = 0
     let maskCache = 0
@@ -159,44 +184,46 @@ export function InvasionViewer() {
       }
 
       // --- 湧かせる ---
+      // 階層ごとに、決まった数だけ湧かせる。投入速度は「1 匹が何匹ぶんか」に吸わせる
       if (s.phase === 'invasion' && !s.pendingDraft) {
-        // 湧かせる数は SPAWN_CAP で頭打ちにし、超えたぶんは 1 匹に束ねて大きくする
-        const rate = launchRate(s, cfg) * getSpeed()
-        const bundle = Math.max(1, rate / SPAWN_CAP)
-        const scale = sharkScale(bundle)
-        const bodyH = SHARK_H * scale
-        // 大きくなるほど数を減らす。面積で釣り合わせないと画面が塗り潰される
-        const cap = Math.max(40, Math.round(MAX_PARTICLES / (scale * scale)))
-        // 描ける以上に溜め込まない。溜めると上限到達後も湧き続けて無駄になる
-        acc = Math.min(acc + dt * (rate / bundle), MAX_SPAWN_PER_FRAME)
-        while (acc >= 1) {
-          acc -= 1
-          if (parts.length >= cap) {
-            acc = 0
-            break
+        const tiers = tiersFor(launchRate(s, cfg) * getSpeed())
+        for (let i = 0; i < accs.length; i++) {
+          const tier = tiers[i]
+          if (!tier) {
+            accs[i] = 0
+            continue
           }
-          parts.push({
-            x: -14,
-            y: bodyH / 2 + Math.random() * Math.max(10, ground - bodyH),
-            vx: 240 + Math.random() * 160,
-            vy: (Math.random() - 0.5) * 26,
-            rot: 0,
-            vrot: 0,
-            alpha: 1,
-            bounced: false,
-            mask: maskCache,
-            scale,
-          })
+          const bodyH = SHARK_H * tier.scale
+          accs[i] = Math.min(accs[i] + dt * tier.spawn, MAX_SPAWN_PER_FRAME)
+          while (accs[i] >= 1) {
+            accs[i] -= 1
+            if (parts.length >= MAX_PARTICLES) {
+              accs[i] = 0
+              break
+            }
+            parts.push({
+              x: -14,
+              y: bodyH / 2 + Math.random() * Math.max(10, ground - bodyH),
+              vx: 240 + Math.random() * 160,
+              vy: (Math.random() - 0.5) * 26,
+              rot: 0,
+              vrot: 0,
+              alpha: 1,
+              bounced: false,
+              mask: maskCache,
+              scale: tier.scale,
+            })
+          }
         }
       } else {
-        acc = 0
+        accs.fill(0)
       }
 
       // --- 更新 ---
       for (let i = parts.length - 1; i >= 0; i--) {
         const p = parts[i]
-        // 建物より大きい個体は動きを落とす。等速だと軽く見えて質量が出ない
-        const mdt = SHARK_H * p.scale >= buildingH ? dt * GIANT_MOTION : dt
+        // 大きい個体ほど動きを落とす。等速だと巨体ほど軽く見えてしまう
+        const mdt = dt * motionOf(p.scale)
         if (!p.bounced) {
           p.x += p.vx * mdt
           p.y += p.vy * mdt
