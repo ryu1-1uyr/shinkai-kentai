@@ -189,6 +189,13 @@ export const UNLOCKS: UnlockDef[] = [
     kind: 'qol',
   },
   {
+    id: 'analysis',
+    name: '解析装置',
+    detail: '突然変異の発現率と戦闘力倍率が読めるようになる',
+    cost: 400,
+    kind: 'unique',
+  },
+  {
     id: 'reroll',
     name: '再実験',
     detail: 'ドラフトを 1 ラン に 1 回だけ引き直せる',
@@ -322,6 +329,8 @@ export type MetaEffects = {
   earlyDraft: boolean
   /** ドラフトの提示枚数への加算 */
   extraOffers: number
+  /** 突然変異の発現率と戦闘力倍率を表示してよいか */
+  showNumbers: boolean
   /** 1 ラン に使えるドラフトの引き直し回数 */
   rerolls: number
   /** 変異のランク上限 */
@@ -367,6 +376,7 @@ export function metaEffects(m: MetaState): MetaEffects {
     launcherSynergy: has('launcherSynergy'),
     earlyDraft: has('earlyDraft'),
     extraOffers: has('extraOffer') ? 1 : 0,
+    showNumbers: has('analysis'),
     rerolls: has('reroll') ? 1 : 0,
     maxRank: has('prototype') ? 4 : 3,
     reserveSeconds: has('reservePower') ? 20 : 0,
@@ -494,11 +504,12 @@ export const TREE: TreeNode[] = [
   { id: 'reservePower', branch: 'raid', col: 3, row: 3, requires: ['launcherSynergy'] },
   { id: 'chainCollapse', branch: 'raid', col: 3, row: 4, requires: ['reservePower'] },
 
-  // 実験 — ドラフトへの干渉
-  { id: 'reroll', branch: 'lab', col: 4, row: 0, requires: [] },
-  { id: 'earlyDraft', branch: 'lab', col: 4, row: 1, requires: ['reroll'] },
-  { id: 'extraOffer', branch: 'lab', col: 4, row: 2, requires: ['earlyDraft'] },
-  { id: 'prototype', branch: 'lab', col: 4, row: 3, requires: ['extraOffer'] },
+  // 実験 — ドラフトへの干渉。まず「測れるようにする」ところから始まる
+  { id: 'analysis', branch: 'lab', col: 4, row: 0, requires: [] },
+  { id: 'reroll', branch: 'lab', col: 4, row: 1, requires: ['analysis'] },
+  { id: 'earlyDraft', branch: 'lab', col: 4, row: 2, requires: ['reroll'] },
+  { id: 'extraOffer', branch: 'lab', col: 4, row: 3, requires: ['earlyDraft'] },
+  { id: 'prototype', branch: 'lab', col: 4, row: 4, requires: ['extraOffer'] },
 
   // 系統 — 変異プールの拡張
   { id: 'family_abyss', branch: 'fam', col: 5, row: 0, requires: [], preview: 'tentacle' },

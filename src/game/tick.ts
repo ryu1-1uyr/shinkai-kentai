@@ -236,12 +236,7 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
       s.births.set(mask, after)
       // 1 体目が生まれた瞬間だけ、珍しい個体を記録に残す
       if (before < 1 && after >= 1 && isNotable(mask)) {
-        pushLog(
-          s,
-          'birth',
-          `${nameOfMask(mask)}  戦闘力 ${Math.round(powerOfMask(mask, s.ranks, cfg))}`,
-          mask,
-        )
+        pushLog(s, 'birth', `${nameOfMask(mask)} が誕生`, mask)
       }
     }
   }

@@ -4,7 +4,7 @@ import { totalSharks } from '../game/inventory.ts'
 import { MUTATION_BY_ID, expectedPower, nameOfMask, powerOfMask } from '../game/mutations.ts'
 import { applyMetaToConfig, createMeta, type MetaState, metaEffects } from '../game/meta.ts'
 import { createState, type GameState } from '../game/state.ts'
-import { applyDraft, clickValue, cultureRate, tick } from '../game/tick.ts'
+import { applyDraft, clickEV, clickValue, cultureRate, tick } from '../game/tick.ts'
 import { autoBuy, BUY_RATIOS, type DraftPolicyName, makeDraftChooser, pickPolicy } from './policy.ts'
 
 export type SimOptions = {
@@ -59,7 +59,7 @@ export function simulate(opts: SimOptions = {}): SimResult {
     tick(s, input, cfg)
     if (s.pendingDraft) applyDraft(s, cfg, pickDraft(s, cfg, chooser))
     // 購入判断は 1 秒に 1 回で十分（毎ティック回すと無駄が大きい）
-    if (Math.round(s.t / dt) % cfg.tickHz === 0) autoBuy(s, cfg, ratio, cultureRate(s) + clickValue(s, cfg) * input.clicksPerSec)
+    if (Math.round(s.t / dt) % cfg.tickHz === 0) autoBuy(s, cfg, ratio, cultureRate(s) + clickEV(s, cfg) * input.clicksPerSec)
   }
 
   const stacks = [...s.inv.entries()]
@@ -186,7 +186,7 @@ if (mode === 'trace') {
   while (s.phase !== 'over' && s.t < 600) {
     tick(s, input, cfg)
         if (s.pendingDraft) applyDraft(s, cfg, pickDraft(s, cfg, chooser))
-    if (Math.round(s.t / dt) % cfg.tickHz === 0) autoBuy(s, cfg, ratio, cultureRate(s) + clickValue(s, cfg) * input.clicksPerSec)
+    if (Math.round(s.t / dt) % cfg.tickHz === 0) autoBuy(s, cfg, ratio, cultureRate(s) + clickEV(s, cfg) * input.clicksPerSec)
     if (s.t >= nextLog) {
       nextLog += 10
       console.log(

@@ -11,6 +11,11 @@ export type Config = {
     perTankBonus: number
   }
 
+  start: {
+    /** 恒久強化とは別に、最初から持っている培養槽 */
+    tanks: number
+  }
+
   shark: {
     /** サメ 1 体の生産に必要な培養液 */
     cultureCost: number
@@ -39,6 +44,8 @@ export type Config = {
     countStep: number
     /** ボス HP = H(d) * bossMult */
     bossMult: number
+    /** ボスが本来の重さになる深度。それより浅いところでは比例して軽くなる */
+    bossRampDepth: number
   }
 
   mutation: {
@@ -72,6 +79,10 @@ export const DEFAULT_CONFIG: Config = {
     perTankBonus: 0.15,
   },
 
+  start: {
+    tanks: 6,
+  },
+
   shark: {
     cultureCost: 4,
     basePower: 1,
@@ -83,7 +94,7 @@ export const DEFAULT_CONFIG: Config = {
     runWideBonusPerDepth: 15,
     perDepthBase: 90,
     perDepthStep: 10,
-    baseLaunchRate: 8,
+    baseLaunchRate: 20,
   },
 
   targets: {
@@ -92,6 +103,7 @@ export const DEFAULT_CONFIG: Config = {
     countBase: 8,
     countStep: 2,
     bossMult: 10,
+    bossRampDepth: 3,
   },
 
   mutation: {

@@ -57,10 +57,16 @@ export function DraftOverlay() {
                     <SharkIcon mask={maskOf(m)} height={40} />
                     <span className="card-rarity">{RARITY_LABEL[m.rarity]}</span>
                     <span className="card-name">{m.name}</span>
-                    <span className="card-effect">
-                      発現率 {(rateAt(m, next, cfg) * 100).toFixed(0)}% ／ 戦闘力 ×
-                      {fmt(powerAt(m, next, cfg))}
-                    </span>
+                    {s.meta.showNumbers ? (
+                      <span className="card-effect">
+                        発現率 {(rateAt(m, next, cfg) * 100).toFixed(0)}% ／ 戦闘力 ×
+                        {fmt(powerAt(m, next, cfg))}
+                      </span>
+                    ) : (
+                      <span className="card-effect" data-unknown="true">
+                        未解析 — 希少度だけが手がかり
+                      </span>
+                    )}
                     {cur > 0 && (
                       <span className="card-upgrade">
                         R{cur} → R{next} に強化（発現率も倍率も上がる）

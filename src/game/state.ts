@@ -133,7 +133,7 @@ export function createState(cfg: Config, seed: number, meta?: MetaEffects): Game
 
   // 恒久強化ぶんの初期値を積む
   const tankIndex = BUILDING_INDEX.get('tank')
-  if (tankIndex !== undefined) s.buildings[tankIndex] = eff.startTanks
+  if (tankIndex !== undefined) s.buildings[tankIndex] = cfg.start.tanks + eff.startTanks
   if (eff.startSharks > 0) {
     s.inv.set(0, eff.startSharks)
     s.births.set(0, eff.startSharks)

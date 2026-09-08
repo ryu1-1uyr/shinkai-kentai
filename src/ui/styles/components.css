@@ -453,17 +453,26 @@
 /* 前提を満たしていない節は沈める */
 .node[data-locked='true'] { opacity: 0.28; border-left-color: var(--c-line); }
 
-/* 買える節は枝の色で光らせる。ここが今どこを伸ばせるかの案内になる */
+/*
+ * 買える節は「予算の色」で光らせる。
+ * 枝ごとの色で光らせると装飾に見えて、いま何が買えるのかの合図にならなかった。
+ * 左端だけは枝の色を残し、どの系統かは分かるようにする。
+ */
 .node[data-buyable='true'] {
-  border-color: var(--accent);
-  border-left-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--c-panel));
+  border-color: var(--c-score);
+  background: color-mix(in srgb, var(--c-score) 10%, var(--c-panel));
   animation: node-ready 2.4s ease-in-out infinite;
 }
+.node[data-buyable='true'] .node-cost { color: var(--c-score); font-weight: 700; }
 @keyframes node-ready {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
-  50% { box-shadow: 0 0 14px 0 color-mix(in srgb, var(--accent) 35%, transparent); }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-score) 0%, transparent); }
+  50% { box-shadow: 0 0 16px 0 color-mix(in srgb, var(--c-score) 45%, transparent); }
 }
+
+/* 前提は満たしているが予算が足りない節。あといくらかを添える */
+.node[data-short='true'] { opacity: 0.72; }
+.node[data-short='true'] .node-cost { color: var(--c-text-mute); }
+.node-short { margin-left: auto; color: var(--c-text-mute); font-size: var(--fs-xs); }
 
 /* 取得済みは枝の色で塗り、通ったことが分かるようにする */
 .node[data-taken='true'] {
@@ -510,7 +519,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .node[data-buyable='true'] { animation: none; box-shadow: 0 0 10px 0 color-mix(in srgb, var(--accent) 30%, transparent); }
+  .node[data-buyable='true'] { animation: none; box-shadow: 0 0 10px 0 color-mix(in srgb, var(--c-score) 40%, transparent); }
 }
 
 .award { color: var(--c-score); }
@@ -868,3 +877,10 @@
   font-size: var(--fs-xs);
   color: var(--c-text-dim);
 }
+
+/* 解析装置を持たないあいだ、突然変異の数値は伏せる */
+.card-effect[data-unknown='true'] { color: var(--c-text-mute); font-style: italic; }
+
+/* 予算で今すぐ買える節の数。予算の数字だけでは何に届くのかが読めない */
+.lab-affordable { margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--c-text-mute); }
+.lab-affordable[data-any='true'] { color: var(--c-score); }

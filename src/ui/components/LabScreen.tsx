@@ -73,6 +73,8 @@ export function LabScreen() {
 
   const maxRow = Math.max(...TREE.map((n) => n.row))
   const maxCol = Math.max(...TREE.map((n) => n.col))
+  // 予算で今すぐ買える節の数。予算の数字だけでは何が届くのか読めないため添える
+  const affordable = TREE.filter((n) => canPurchase(meta, n.id)).length
 
   return (
     <div className="lab">
@@ -82,6 +84,9 @@ export function LabScreen() {
           <div className="lab-budget">
             <span className="lab-budget-value">{fmt(meta.budget)}</span>
             <span className="stat-label">研究予算</span>
+          </div>
+          <div className="lab-affordable" data-any={affordable > 0}>
+            {affordable > 0 ? `いま ${affordable} 件 取得できる` : '取得できる強化はない'}
           </div>
         </div>
         <div className="lab-stats">
@@ -149,6 +154,7 @@ export function LabScreen() {
               data-taken={taken}
               data-locked={!open}
               data-buyable={buyable}
+              data-short={open && cost !== null && !buyable}
               style={{ gridColumn: n.col + 1, gridRow: n.row + 1 }}
               disabled={!buyable}
               onClick={() => purchaseNode(n.id)}
@@ -170,6 +176,9 @@ export function LabScreen() {
               <span className="node-cost">
                 {taken && !numeric && <span className="node-mark">取得済み</span>}
                 {cost === null ? (numeric ? 'MAX' : '') : fmt(cost)}
+                {open && cost !== null && cost > meta.budget && (
+                  <span className="node-short">あと {fmt(cost - meta.budget)}</span>
+                )}
               </span>
             </button>
           )

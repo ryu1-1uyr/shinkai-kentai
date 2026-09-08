@@ -34,7 +34,8 @@ export function StockPanel() {
                   <Sprite kind="mutation" id={m.id} size={18} />
                   {m.name}
                   <span className="mut-rank">
-                    R{rank} {(rateAt(m, rank, cfg) * 100).toFixed(0)}%
+                    R{rank}
+                    {s.meta.showNumbers && ` ${(rateAt(m, rank, cfg) * 100).toFixed(0)}%`}
                   </span>
                 </span>
               )

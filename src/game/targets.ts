@@ -10,9 +10,16 @@ export function targetCount(depth: number, cfg: Config): number {
   return cfg.targets.countBase + cfg.targets.countStep * (depth - 1)
 }
 
-/** 深度 d のボス HP */
+/**
+ * 深度 d のボス HP。
+ *
+ * ボスは通常建築物の 10 倍あり、深度 1 では**その深度の総 HP の 56%** をボスが占める。
+ * 初回ランが届かない原因がここに集中していたので、浅いところだけボスを軽くする。
+ * bossRampDepth 以降は本来の重さに戻るため、後半の難易度は変わらない。
+ */
 export function bossHp(depth: number, cfg: Config): number {
-  return targetHp(depth, cfg) * cfg.targets.bossMult
+  const ramp = Math.min(1, (depth + 1) / (cfg.targets.bossRampDepth + 1))
+  return targetHp(depth, cfg) * cfg.targets.bossMult * ramp
 }
 
 /** 深度 d を丸ごと突破するのに必要な総ダメージ */

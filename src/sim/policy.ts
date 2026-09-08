@@ -61,18 +61,34 @@ export function autoBuy(s: GameState, cfg: Config, ratio: BuyRatio, income: numb
   }
 }
 
-export type DraftPolicyName = 'stack' | 'spread' | 'greedyEV' | 'random'
+export type DraftPolicyName = 'stack' | 'spread' | 'greedyEV' | 'random' | 'rarity'
 
 /**
  * ドラフト方針。
  *  stack    … 取得済みの変異を優先して重ねる
  *  spread   … 未取得の変異を優先して広げる
  *  greedyEV … 取った後の期待戦闘力が最大になる 1 枚を選ぶ（上手いプレイヤーの近似）
+ *  rarity   … 最もレアな 1 枚を選ぶ。倍率が伏せられている状態のプレイヤーの近似
  *  random   … 無作為
  */
 export function makeDraftChooser(name: DraftPolicyName) {
   return (offers: MutationDef[], s: GameState, cfg: Config): number => {
     if (name === 'random') return Math.floor(Math.random() * offers.length)
+
+    if (name === 'rarity') {
+      const order = { common: 0, uncommon: 1, rare: 2, legendary: 3 }
+      let best = 0
+      let bestKey = -Infinity
+      offers.forEach((o, i) => {
+        // 同じレアリティなら、既に持っている方（強化になる方）を選ぶ
+        const key = order[o.rarity] * 10 + Math.min(1, s.ranks.get(o.id) ?? 0)
+        if (key > bestKey) {
+          bestKey = key
+          best = i
+        }
+      })
+      return best
+    }
 
     if (name === 'stack' || name === 'spread') {
       const owned = offers.map((o) => s.ranks.get(o.id) ?? 0)
