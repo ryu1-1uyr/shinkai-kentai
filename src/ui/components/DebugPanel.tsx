@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { type BundleMode, getBundleMode, setBundleMode } from './InvasionViewer.tsx'
 import {
   debugAddCulture,
   debugEndRun,
@@ -21,6 +22,7 @@ export function DebugPanel() {
   const [open, setOpen] = useState(false)
   const [lab, setLab] = useState(false)
   const [confirmWipe, setConfirmWipe] = useState(false)
+  const [bundle, setBundle] = useState<BundleMode>(getBundleMode())
   const meta = getMeta()
 
   if (!import.meta.env.DEV) return null
@@ -52,6 +54,29 @@ export function DebugPanel() {
           <button onClick={debugSkipCulture}>培養フェーズを飛ばす</button>
           <button onClick={debugEndRun}>ランを終了</button>
           <button onClick={() => setLab(true)}>スプライト合成を確認</button>
+        </div>
+        {/* 束ねたサメの見せ方を切り替えて比べる */}
+        <div className="dbg-row">サメの束ね方</div>
+        <div className="dbg-btns">
+          {(
+            [
+              ['log', '対数（滑らかに）'],
+              ['step', '段階（10 倍ごと）'],
+            ] as Array<[BundleMode, string]>
+          ).map(([mode, label]) => (
+            <button
+              key={mode}
+              data-active={bundle === mode}
+              onClick={() => {
+                setBundleMode(mode)
+                setBundle(mode)
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="dbg-btns">
           {/* 取り消せない操作なので一度確認を挟む */}
           {confirmWipe ? (
             <>

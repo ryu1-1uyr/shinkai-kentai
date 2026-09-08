@@ -1128,6 +1128,10 @@
   border-color: var(--c-line-hi);
   background: var(--c-panel-hi);
 }
+.dbg-btns button[data-active='true'] {
+  border-color: var(--c-culture);
+  color: var(--c-culture);
+}
 .dbg-btns .dbg-danger {
   border-color: var(--c-danger);
   color: var(--c-danger);
