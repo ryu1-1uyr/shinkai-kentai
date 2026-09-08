@@ -1,5 +1,4 @@
-import { sortedByPower } from '../../game/inventory.ts'
-import { MUTATIONS, nameOfMask, rateAt } from '../../game/mutations.ts'
+import { MUTATIONS, nameOfMask, powerOfMask, rateAt } from '../../game/mutations.ts'
 import { getConfig } from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
@@ -12,9 +11,17 @@ export function StockPanel() {
   const s = useGame()
   const cfg = getConfig()
 
-  const stacks = sortedByPower(s.inv, s.ranks, cfg)
-    .filter((x) => x.count >= 1)
-    .sort((a, b) => b.power * b.count - a.power * a.count)
+  /*
+   * 在庫ではなく「このランで生まれた種」を並べる。
+   * 侵略中は生産した端から出撃するので在庫は常にほぼゼロで、
+   * 在庫だけを出すと一覧が空になって何を作ってきたのかが残らない。
+   * 出撃済みの種は 0 体のまま並べ続け、そのランの成果として見せる。
+   */
+  const stacks = [...s.births.entries()]
+    .filter(([, born]) => born >= 1)
+    .map(([mask]) => ({ mask, count: s.inv.get(mask) ?? 0, power: powerOfMask(mask, s.ranks, cfg) }))
+    // 在庫のある種を先に、そのあとは戦闘力の高い順
+    .sort((a, b) => Number(b.count >= 1) - Number(a.count >= 1) || b.power - a.power)
   const shown = stacks.slice(0, VISIBLE)
   const rest = stacks.slice(VISIBLE)
   const restCount = rest.reduce((a, b) => a + b.count, 0)
@@ -46,13 +53,14 @@ export function StockPanel() {
 
       <div className="panel scroll">
         <div className="panel-title">検体在庫</div>
+        {s.phase === 'invasion' && (
+          <p className="panel-note">生産した端から出撃していくため、在庫はほぼゼロで推移する。</p>
+        )}
         {shown.length === 0 ? (
-          <p className="empty-note">
-            在庫なし。侵略中は生産した端から出撃していくため、在庫はほぼゼロで推移する。
-          </p>
+          <p className="empty-note">まだ検体がいない。培養液を集めて生産を始める。</p>
         ) : (
           shown.map((st) => (
-            <div key={st.mask} className="stack">
+            <div key={st.mask} className="stack" data-empty={st.count < 1}>
               <SharkIcon mask={st.mask} height={26} />
               <span className="stack-name">{nameOfMask(st.mask)}</span>
               <span className="stack-count">{fmt(st.count)}</span>

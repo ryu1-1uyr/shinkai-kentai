@@ -404,6 +404,19 @@
   font-size: var(--fs-xs);
   line-height: 1.7;
 }
+.panel-note {
+  margin: calc(var(--sp-1) * -1) 0 var(--sp-1);
+  color: var(--c-text-mute);
+  font-size: var(--fs-xs);
+}
+
+/* 出撃して在庫が尽きた種。そのランで作ったものとして残すが、生きている在庫とは分ける */
+.stack[data-empty='true'] {
+  opacity: 0.42;
+}
+.stack[data-empty='true'] .stack-count {
+  color: var(--c-text-mute);
+}
 
 /* ---- 変異バッジ ---- */
 .mut-list {
