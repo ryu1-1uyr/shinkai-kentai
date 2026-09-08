@@ -1,0 +1,264 @@
+/*
+ * モバイル（横画面）向けの調整。
+ *
+ * このファイルの中身は**すべて 1 つのメディアクエリの中**に閉じてある。
+ * 条件から外れる環境（= PC）の描画は 1px も変わらない。
+ *
+ * 条件は「幅 1000px 以下」かつ「高さ 620px 以下」かつ「横長」。
+ *   幅 1000px 以下  … 横画面のスマートフォンは最大でも 932px
+ *   高さ 620px 以下 … PC のウィンドウを横に狭めただけのときに巻き込まない
+ *   横長            … 縦画面は従来どおり縦に積む
+ * 横画面のタブレット（1024x768 など）は高さで外れ、PC と同じ 3 カラムになる。
+ *
+ * 縦の余白が 390px しかないため、方針は次の 3 つ。
+ *   1. ページ自体はスクロールさせず、列の中だけをスクロールさせる
+ *   2. 採取ボタンを横並びの帯にして、縦を使わせない
+ *   3. 文字と余白はトークンごと縮める（個別指定を増やさない）
+ */
+@media (max-width: 1000px) and (max-height: 620px) and (orientation: landscape) {
+  :root {
+    --fs-xs: 10px;
+    --fs-sm: 12px;
+    --fs-md: 14px;
+    --fs-lg: 16px;
+    --fs-xl: 22px;
+    --sp-3: 8px;
+    --sp-4: 10px;
+    --sp-5: 12px;
+    --sprite-size: 18px;
+  }
+
+  /* 連打しても拡大や選択が起きないようにする。クリッカーでは致命的な差になる */
+  body {
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+  }
+  .app,
+  .lab {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  button {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* --- 実験画面 --- */
+
+  .app {
+    height: 100%;
+    overflow: hidden;
+    grid-template-columns: 220px 1fr 196px;
+    grid-template-areas:
+      'hud      hud       hud'
+      'produce  invasion  stock';
+    gap: var(--sp-1);
+    /* ノッチのある端末を横にすると、左右が切り欠きに隠れる */
+    padding: var(--sp-1) max(var(--sp-1), env(safe-area-inset-right)) var(--sp-1)
+      max(var(--sp-1), env(safe-area-inset-left));
+  }
+
+  /* 列の高さが決まるので、余りを受け取って中でスクロールさせる */
+  .col > .panel.scroll {
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: none;
+  }
+  .col > .panel:not(.scroll) {
+    flex: 0 0 auto;
+  }
+  .col {
+    gap: var(--sp-1);
+  }
+  .panel {
+    padding: var(--sp-2);
+    gap: var(--sp-1);
+  }
+
+  /*
+   * 資源パネルは読むだけの情報なので詰める。
+   * ここで縦を稼がないと、実際に触る設備の一覧が数十 px しか残らない。
+   */
+  .gauges {
+    gap: var(--sp-1);
+  }
+  .gauge-label {
+    min-width: 52px;
+  }
+  .gauge-left {
+    min-width: 62px;
+  }
+  .gauge {
+    height: 6px;
+  }
+  .tally {
+    padding: 0;
+  }
+  .tally-value {
+    font-size: var(--fs-md);
+  }
+
+  /* 設備は触る場所なので、資源より先に高さを確保する */
+  .area-produce > .panel.scroll {
+    min-height: 116px;
+  }
+  .area-produce > .panel:not(.scroll) {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    gap: 2px;
+  }
+  .buy {
+    padding: var(--sp-1) var(--sp-2);
+    gap: var(--sp-1);
+  }
+  .buy .sprite {
+    --sprite-size: 16px;
+  }
+
+  .hud {
+    padding: var(--sp-1) var(--sp-2);
+    gap: var(--sp-3);
+  }
+  .hud-timer {
+    font-size: var(--fs-lg);
+  }
+  .hud-standby {
+    display: none;
+  }
+
+  /* 採取ボタンは縦を食う最大の要素なので、横並びの帯にする */
+  .click-area {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: center;
+    gap: var(--sp-1) var(--sp-2);
+    padding: var(--sp-1) var(--sp-2);
+    min-height: 48px;
+    font-size: var(--fs-sm);
+  }
+  .click-area .sprite {
+    --sprite-size: 20px;
+  }
+  .click-label {
+    font-size: var(--fs-md);
+  }
+  /* 採取量と会心は 2 行目に並べる。1 行ずつ使うと 30px 近く食う */
+  .click-area .sprite,
+  .click-label {
+    order: 0;
+  }
+  .click-hint,
+  .click-crit {
+    order: 1;
+  }
+  .click-hint {
+    margin-left: auto;
+  }
+  .click-crit {
+    margin-right: auto;
+  }
+
+  /* 培養フェーズの円タイマーは中央の主役だが、縦が足りないので詰める */
+  .ct {
+    width: 108px;
+    height: 108px;
+    margin: 0 auto;
+  }
+
+  /* 突撃ビュワーは高さを削る。サメの上限は描画側が高さから決め直す */
+  .viewer {
+    height: 84px;
+  }
+
+  /* 幅 196px に長い複合名は収まらない。折り返すと 1 文字ずつ縦に並ぶ */
+  .stack-name {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* --- ドラフト・リザルト --- */
+
+  .overlay {
+    padding: var(--sp-2);
+  }
+  .modal {
+    padding: var(--sp-2) var(--sp-3);
+    gap: var(--sp-1);
+    max-height: 100%;
+    overflow-y: auto;
+  }
+  /* リザルトが少しだけ溢れるので、最後の操作は常に見える位置に貼り付ける */
+  .modal > .btn {
+    position: sticky;
+    bottom: calc(var(--sp-2) * -1);
+    background: var(--c-panel);
+  }
+  .champion {
+    padding: var(--sp-2);
+  }
+  /* 3〜4 枚を横に並べる。縦に積むと 1 枚も収まらない */
+  .cards {
+    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+    gap: var(--sp-2);
+  }
+  .card {
+    padding: var(--sp-2);
+    gap: 2px;
+  }
+  .card .sprite {
+    --sprite-size: 24px;
+  }
+  /* 変異のサメ絵は 40px 固定で描かれるので、縦を詰めるために縮める */
+  .card .shark-icon {
+    height: 26px;
+  }
+  .card-name {
+    font-size: var(--fs-sm);
+  }
+  .champion-body canvas {
+    height: 40px;
+  }
+
+  /* --- 研究所 --- */
+
+  .lab {
+    height: 100%;
+    overflow-y: auto;
+    padding: var(--sp-2);
+    gap: var(--sp-2);
+  }
+  .lab-head {
+    gap: var(--sp-3);
+    padding: var(--sp-2);
+  }
+  .lab-budget-value {
+    font-size: var(--fs-lg);
+  }
+  .node {
+    padding: var(--sp-1) var(--sp-2);
+    gap: 2px;
+  }
+  .node-preview {
+    display: none;
+  }
+
+  /*
+   * スキルツリーは 900px 以下で 2 列の一覧に崩れる。
+   * 横画面なら 4 列入るので、縦スクロールが 4 画面から 1.5 画面に減る。
+   * 枝の見出しは説明文を落として、名前だけの凡例にする。
+   */
+  .tree,
+  .tree-heads {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+  .tree-head {
+    padding: var(--sp-1) var(--sp-2);
+  }
+  .tree-head-sub {
+    display: none;
+  }
+}

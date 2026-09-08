@@ -60,16 +60,22 @@ const PLAIN_SPAWN = 80
 /** 束ねる意味が出る最小の数。これを下回る階層は使わない */
 const MIN_BUNDLE = 2
 
-/** 大きさの上限。ビュワーの高さが 132px なのでこれ以上は見えない */
-const MAX_SCALE = 5.5
+/**
+ * 大きさの上限は、そのときのビュワーの高さから決める。
+ * PC で 132px、モバイルの横画面で 84px と高さが変わるため、
+ * 定数で持つと片方でサメがはみ出すか、小さすぎるかのどちらかになる。
+ */
+function maxScaleFor(height: number): number {
+  return Math.max(2, (height - 22) / SHARK_H)
+}
 
 /** 動きの遅さの効き方と下限。遅すぎると投入に追いつかず、画面が実態から離れる */
 const MOTION_EXP = 0.7
 const MIN_MOTION = 0.35
 
 /** 束ねた数に対する大きさ。100 匹で 2 倍、1000 匹で 3 倍、10000 匹で 4 倍 */
-function sharkScale(bundle: number): number {
-  return Math.min(MAX_SCALE, Math.max(1, Math.log10(bundle)))
+function sharkScale(bundle: number, maxScale: number): number {
+  return Math.min(maxScale, Math.max(1, Math.log10(bundle)))
 }
 
 /** 大きいほどゆっくり動く。同じ px/秒 だと巨体ほど軽く見えてしまう */
@@ -88,7 +94,7 @@ type Tier = { bundle: number; scale: number; spawn: number }
  * ちょうど投入速度ぶんを表せるように決める。
  * 階層が下がるごとに束ね数は 1/10 になり、大きさは 1 段小さくなる。
  */
-function tiersFor(rate: number): Tier[] {
+function tiersFor(rate: number, maxScale: number): Tier[] {
   if (rate <= 0) return []
   const plain: Tier = { bundle: 1, scale: 1, spawn: Math.min(rate, PLAIN_SPAWN) }
   if (rate <= PLAIN_SPAWN) return [plain]
@@ -101,7 +107,7 @@ function tiersFor(rate: number): Tier[] {
   for (let i = 0; i < TIER_SPAWN.length; i++) {
     const bundle = top / Math.pow(10, i)
     if (bundle < MIN_BUNDLE) break
-    out.push({ bundle, scale: sharkScale(bundle), spawn: TIER_SPAWN[i] })
+    out.push({ bundle, scale: sharkScale(bundle, maxScale), spawn: TIER_SPAWN[i] })
   }
   out.push(plain)
   return out
@@ -242,7 +248,7 @@ export function InvasionViewer() {
       if (s.phase === 'invasion' && !s.pendingDraft) {
         // 名目の投入速度ではなく、実際に出撃した数で描く。
         // 在庫が尽きているときに居ないサメを流さないため
-        const tiers = tiersFor(s.launchedPerSec * getSpeed())
+        const tiers = tiersFor(s.launchedPerSec * getSpeed(), maxScaleFor(h))
         for (let i = 0; i < accs.length; i++) {
           const tier = tiers[i]
           if (!tier) {
