@@ -108,6 +108,20 @@ function tiersFor(rate: number): Tier[] {
   return out
 }
 
+/**
+ * その階層のサメがどの見た目になるか。
+ *
+ * 大きい階層ほど戦闘力の高い側から引く。束ねた中の代表として不自然ではないし、
+ * 「大きいサメほど珍しい」という読み方ができる。
+ */
+function pickMask(palette: number[], tier: number, tierCount: number): number {
+  if (palette.length === 0) return 0
+  const band = 1 / Math.max(1, tierCount)
+  const lo = (Math.max(1, tierCount) - 1 - tier) * band
+  const frac = lo + Math.random() * band
+  return palette[Math.min(palette.length - 1, Math.floor(frac * palette.length))]
+}
+
 type P = {
   x: number
   y: number
@@ -122,11 +136,53 @@ type P = {
   scale: number
 }
 
-/** いま出撃しているのは最も弱い個体なので、その組み合わせの見た目を使う */
-function launchingMask(): number {
+/** 画面に流す見た目の候補数 */
+const PALETTE_SIZE = 16
+
+/**
+ * 見た目を選ぶときの、頭数への重みの掛け方。
+ *
+ * 頭数そのままで選ぶと通常サメが 16 枠中 9 枠を占めて、
+ * 実際には変異した個体も大量に出撃しているのに画面がほぼ通常サメになる。
+ * 平方根で潰すと 15 種まで散る。4 乗根まで潰すと今度は通常サメが消えて、
+ * 「ありふれた個体」という基準が無くなる。
+ */
+const PALETTE_WEIGHT_EXP = 0.5
+
+/**
+ * いま出撃している個体の見た目を、**頭数の比で**選ぶ。
+ *
+ * 以前は「最も弱い個体」1 種だけを使っていたので、実際には
+ * 変異した個体も大量に出撃しているのに通常サメしか流れなかった。
+ *
+ * 戻り値は戦闘力の昇順。湧かせる側が、大きい階層ほど後ろ（強い側）から
+ * 引くことで、大きいサメほど珍しい見た目になる。
+ */
+function launchingPalette(): number[] {
   const s = getState()
-  const stacks = sortedByPower(s.inv, s.ranks, getConfig(), s.powerCache)
-  return stacks.find((x) => x.count >= 1)?.mask ?? 0
+  const total = totalSharks(s.inv)
+  if (total <= 0) return [0]
+  const rows = sortedByPower(s.inv, s.ranks, getConfig(), s.powerCache)
+  if (rows.length === 0) return [0]
+
+  const weights = rows.map((r) => Math.pow(r.count, PALETTE_WEIGHT_EXP))
+  let sum = 0
+  for (const w of weights) sum += w
+  if (sum <= 0) return [0]
+
+  const out: number[] = []
+  let acc = 0
+  let i = 0
+  for (let k = 0; k < PALETTE_SIZE; k++) {
+    // 累積した重みを等間隔に切ると、頭数の多い種ほど多く選ばれる
+    const target = (sum * (k + 0.5)) / PALETTE_SIZE
+    while (i < rows.length - 1 && acc + weights[i] < target) {
+      acc += weights[i]
+      i++
+    }
+    out.push(rows[i].mask)
+  }
+  return out
 }
 
 export function InvasionViewer() {
@@ -162,7 +218,7 @@ export function InvasionViewer() {
 
     let last = performance.now()
     let flash = 0
-    let maskCache = 0
+    let palette: number[] = [0]
     let keyAge = 0
     let raf = 0
 
@@ -176,11 +232,11 @@ export function InvasionViewer() {
       const hitX = w - 46
       const buildingH = Math.min(h - 16, 92)
 
-      // --- 出撃サメの見た目は 200ms ごとに更新（毎体引くと重い） ---
+      // --- 出撃サメの見た目は 200ms ごとに選び直す（毎体引くと重い） ---
       keyAge += dt
       if (keyAge > 0.2) {
         keyAge = 0
-        maskCache = launchingMask()
+        palette = launchingPalette()
       }
 
       // --- 湧かせる ---
@@ -210,7 +266,7 @@ export function InvasionViewer() {
               vrot: 0,
               alpha: 1,
               bounced: false,
-              mask: maskCache,
+              mask: pickMask(palette, i, tiers.length),
               scale: tier.scale,
             })
           }
@@ -273,14 +329,8 @@ export function InvasionViewer() {
       }
 
       // サメ
-      // 同じフレームのサメはほぼ同じ mask なので、画像は使い回す
-      let lastMask = -1
-      let img = sharkSprite(0, 1)
       for (const p of parts) {
-        if (p.mask !== lastMask) {
-          lastMask = p.mask
-          img = sharkSprite(p.mask, 1)
-        }
+        const img = sharkSprite(p.mask, 1)
         const sH = SHARK_H * p.scale
         const w = (img.width / img.height) * sH
         if (p.bounced) {

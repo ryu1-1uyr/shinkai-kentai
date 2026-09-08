@@ -483,6 +483,15 @@ function drawOne(
 const cache = new Map<string, HTMLCanvasElement>()
 
 /**
+ * キャッシュに残す枚数。
+ *
+ * 変異の組み合わせは数千通りあり、突撃ビュワーは頭数の比で選んだ見た目を
+ * 次々に描く。上限を置かないと 1 枚 128x72 のキャンバスが際限なく積み上がる。
+ * 同時に必要なのは記録 40 + 在庫 10 + ビュワー 16 程度なので 256 で足りる。
+ */
+const CACHE_LIMIT = 256
+
+/**
  * 変異の組み合わせからスプライトを作る。結果は mask 単位でキャッシュする。
  * scale は論理ピクセル 1 つを何 px で描くか。
  */
@@ -564,6 +573,11 @@ export function sharkSprite(mask: MutationMask, scale = 1): HTMLCanvasElement {
   }
   g.globalAlpha = 1
 
+  // 一番古い 1 枚を捨てる。Map は挿入順を保つのでこれで足りる
+  if (cache.size >= CACHE_LIMIT) {
+    const oldest = cache.keys().next().value
+    if (oldest !== undefined) cache.delete(oldest)
+  }
   cache.set(key, out)
   return out
 }
