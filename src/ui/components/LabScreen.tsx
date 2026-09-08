@@ -74,8 +74,6 @@ export function LabScreen() {
 
   const maxRow = Math.max(...TREE.map((n) => n.row))
   const maxCol = Math.max(...TREE.map((n) => n.col))
-  // 予算で今すぐ買える節の数。予算の数字だけでは何が届くのか読めないため添える
-  const affordable = TREE.filter((n) => canPurchase(meta, n.id)).length
 
   return (
     <div className="lab">
@@ -85,9 +83,6 @@ export function LabScreen() {
           <div className="lab-budget">
             <span className="lab-budget-value">{fmt(meta.budget)}</span>
             <span className="stat-label">{t.lab.budget}</span>
-          </div>
-          <div className="lab-affordable" data-any={affordable > 0}>
-            {affordable > 0 ? fill(t.lab.affordable, { n: affordable }) : t.lab.affordableNone}
           </div>
         </div>
         <div className="lab-stats">

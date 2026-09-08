@@ -425,11 +425,6 @@
   font-family: var(--font-num);
   white-space: nowrap;
 }
-.idle-note {
-  color: var(--c-text-mute);
-  font-size: var(--fs-sm);
-  line-height: 1.7;
-}
 
 /* ---- 在庫 ---- */
 .stack {
@@ -456,11 +451,6 @@
   color: var(--c-text-mute);
   font-size: var(--fs-xs);
   line-height: 1.7;
-}
-.panel-note {
-  margin: calc(var(--sp-1) * -1) 0 var(--sp-1);
-  color: var(--c-text-mute);
-  font-size: var(--fs-xs);
 }
 
 /* 出撃して在庫が尽きた種。そのランで作ったものとして残すが、生きている在庫とは分ける */
@@ -1629,14 +1619,4 @@
 .card-effect[data-unknown='true'] {
   color: var(--c-text-mute);
   font-style: italic;
-}
-
-/* 予算で今すぐ買える節の数。予算の数字だけでは何に届くのかが読めない */
-.lab-affordable {
-  margin-top: var(--sp-1);
-  font-size: var(--fs-xs);
-  color: var(--c-text-mute);
-}
-.lab-affordable[data-any='true'] {
-  color: var(--c-score);
 }
