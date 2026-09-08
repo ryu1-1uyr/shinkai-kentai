@@ -52,6 +52,14 @@ export const NUMERIC_UPGRADES: NumericUpgrade[] = [
     maxLevel: 20,
   },
   {
+    id: 'extraReroll',
+    name: '予備実験枠',
+    detail: (lv) => `ドラフトの引き直しが 1 ラン に ${1 + lv} 回になる`,
+    baseCost: 3000,
+    costGrowth: 2.1,
+    maxLevel: 9,
+  },
+  {
     id: 'critChance',
     name: '採取の勘',
     detail: (lv) => `手動採取の ${5 * lv}% が会心になる`,
@@ -433,7 +441,7 @@ export function metaEffects(m: MetaState): MetaEffects {
     earlyDraft: has('earlyDraft'),
     extraOffers: has('extraOffer') ? 1 : 0,
     showNumbers: has('analysis'),
-    rerolls: has('reroll') ? 1 : 0,
+    rerolls: has('reroll') ? 1 + lv('extraReroll') : 0,
     maxRank: has('prototype') ? 4 : 3,
     reserveSeconds: has('reservePower') ? 20 : 0,
     overkillMult: has('chainCollapse') ? 2 : 1,
@@ -564,9 +572,10 @@ export const TREE: TreeNode[] = [
   // 実験 — ドラフトへの干渉。まず「測れるようにする」ところから始まる
   { id: 'analysis', branch: 'lab', col: 4, row: 0, requires: [] },
   { id: 'reroll', branch: 'lab', col: 4, row: 1, requires: ['analysis'] },
-  { id: 'earlyDraft', branch: 'lab', col: 4, row: 2, requires: ['reroll'] },
-  { id: 'extraOffer', branch: 'lab', col: 4, row: 3, requires: ['earlyDraft'] },
-  { id: 'prototype', branch: 'lab', col: 4, row: 4, requires: ['extraOffer'] },
+  { id: 'extraReroll', branch: 'lab', col: 4, row: 2, requires: ['reroll'] },
+  { id: 'earlyDraft', branch: 'lab', col: 4, row: 3, requires: ['extraReroll'] },
+  { id: 'extraOffer', branch: 'lab', col: 4, row: 4, requires: ['earlyDraft'] },
+  { id: 'prototype', branch: 'lab', col: 4, row: 5, requires: ['extraOffer'] },
 
   // 系統 — 変異プールの拡張
   { id: 'family_abyss', branch: 'fam', col: 5, row: 0, requires: [], preview: 'tentacle' },

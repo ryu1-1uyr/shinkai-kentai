@@ -142,10 +142,16 @@
   padding: 2px var(--sp-2);
   cursor: pointer;
 }
-.speed button[data-active='true'] {
-  color: var(--c-text);
-  border-color: var(--c-line-hi);
-  background: var(--c-panel-hi);
+/*
+ * 選択中は文字も枠も培養液の色にする。
+ * 白との差だけだと、暗い画面の中でどれが有効なのか一目で分からなかった。
+ */
+.speed button[data-active='true'],
+.autobuy button[data-active='true'] {
+  color: var(--c-culture);
+  border-color: var(--c-culture);
+  background: color-mix(in srgb, var(--c-culture) 14%, transparent);
+  box-shadow: 0 0 8px 0 color-mix(in srgb, var(--c-culture) 25%, transparent);
 }
 
 /* 発注モードの切り替え。倍速と同じ見た目で、HUD の同じ列に並べる */
@@ -165,12 +171,6 @@
   border-radius: var(--r-1);
   padding: 2px var(--sp-2);
 }
-.autobuy button[data-active='true'] {
-  color: var(--c-text);
-  border-color: var(--c-line-hi);
-  background: var(--c-panel-hi);
-}
-
 /* 定期発注が動いていないあいだ、対象の指定は効いていないことを示す */
 .buy-auto[data-idle='true'] {
   opacity: 0.35;
