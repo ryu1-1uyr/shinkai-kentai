@@ -14,7 +14,7 @@ import {
 } from './mutations.ts'
 import { POLICIES, type PolicyDef } from './policies.ts'
 import { type GameState, pushLog, refreshBirthDist, refreshPolicyFx, rng } from './state.ts'
-import { bossHp, depthName, perDepthTime, targetCount, targetHp } from './targets.ts'
+import { bossHp, depthNames, perDepthTime, targetCount, targetHp } from './targets.ts'
 
 /** そのティックのプレイヤー入力。シミュレータでは方針関数が埋める */
 export type TickInput = {
@@ -142,6 +142,10 @@ function rollPolicies(s: GameState, cfg: Config): PolicyDef[] {
 }
 
 function beginDepth(s: GameState, cfg: Config): void {
+  // 同じ深度でもランごとに標的の名前が変わるよう、入るたびにプールから引く
+  const names = depthNames(s.depth)
+  s.normalName = names.normal[Math.floor(rng(s) * names.normal.length)]
+  s.bossName = names.boss[Math.floor(rng(s) * names.boss.length)]
   s.destroyed = 0
   s.onBoss = false
   s.currentHp = targetHp(s.depth, cfg)
@@ -159,24 +163,26 @@ function beginDepth(s: GameState, cfg: Config): void {
 function advanceTarget(s: GameState, cfg: Config, overkill: number, mult: number): number {
   if (s.onBoss) {
     // 深度突破
-    pushLog(s, 'boss', `${depthName(s.depth).boss} を破壊`)
+    pushLog(s, 'boss', `${s.bossName} を破壊`)
     s.clearedDepth += 1
     if (cfg.invasion.timerModel === 'runWide') {
       s.timeLeft += cfg.invasion.runWideBonusPerDepth
     }
     s.depth += 1
     beginDepth(s, cfg)
-    pushLog(s, 'depth', `深度 ${s.depth} — ${depthName(s.depth).zone}`)
+    pushLog(s, 'depth', `深度 ${s.depth} — ${depthNames(s.depth).zone}`)
     return overkill * mult
   }
   s.destroyed += 1
-  const names = depthName(s.depth)
   if (s.destroyed >= targetCount(s.depth, cfg)) {
-    pushLog(s, 'boss', `${names.boss} が出現`)
+    pushLog(s, 'boss', `${s.bossName} が出現`)
     s.onBoss = true
     s.currentHp = bossHp(s.depth, cfg)
   } else {
-    pushLog(s, 'hit', `${names.normal} を破壊  ${s.destroyed}/${targetCount(s.depth, cfg)}`)
+    pushLog(s, 'hit', `${s.normalName} を破壊  ${s.destroyed}/${targetCount(s.depth, cfg)}`)
+    // 同じ深度の中でも、次の標的は別の建物にする
+    const pool = depthNames(s.depth).normal
+    s.normalName = pool[Math.floor(rng(s) * pool.length)]
     s.currentHp = targetHp(s.depth, cfg)
   }
   return overkill * mult
@@ -242,7 +248,7 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
   // --- フェーズ遷移 ---
   if (s.phase === 'culture' && s.t >= cfg.culturePhaseSec) {
     s.phase = 'invasion'
-    pushLog(s, 'depth', `深度 ${s.depth} — ${depthName(s.depth).zone}`)
+    pushLog(s, 'depth', `深度 ${s.depth} — ${depthNames(s.depth).zone}`)
     s.timeLeft = cfg.invasion.timerModel === 'runWide' ? cfg.invasion.runWideBase : 0
     beginDepth(s, cfg)
   }

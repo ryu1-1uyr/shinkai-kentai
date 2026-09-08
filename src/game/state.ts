@@ -72,6 +72,9 @@ export type GameState = {
   destroyed: number
   onBoss: boolean
   currentHp: number
+  /** いま挑んでいる標的の名前。深度に入るたびにプールから引く */
+  normalName: string
+  bossName: string
 
   timeLeft: number
   /** 突破し終えた深度の数 */
@@ -116,6 +119,8 @@ export function createState(cfg: Config, seed: number, meta?: MetaEffects): Game
     destroyed: 0,
     onBoss: false,
     currentHp: 0,
+    normalName: '',
+    bossName: '',
     timeLeft: 0,
     clearedDepth: 0,
     score: 0,

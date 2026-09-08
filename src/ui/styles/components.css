@@ -819,3 +819,50 @@
   .depth-fx-notice { animation-duration: 1600ms; }
   .depth-fx[data-kind='depth'] { display: none; }
 }
+
+/* ---- 次のカードまでの進捗 ---- */
+.gauges { display: flex; flex-direction: column; gap: var(--sp-2); }
+.gauge-row { display: flex; align-items: center; gap: var(--sp-2); }
+.gauge-label { flex: 0 0 auto; font-size: var(--fs-xs); color: var(--c-text-dim); min-width: 68px; }
+.gauge-row .gauge { flex: 1 1 auto; }
+.gauge-left {
+  flex: 0 0 auto;
+  min-width: 82px;
+  text-align: right;
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+  color: var(--c-text-mute);
+}
+/* 引き金となる資源の色に合わせる */
+.gauge-row[data-kind='mutation'] .gauge-fill {
+  background: linear-gradient(90deg, var(--c-shark), var(--c-legendary));
+}
+.gauge-row[data-kind='policy'] .gauge-fill {
+  background: linear-gradient(90deg, var(--c-culture), #9fe8ff);
+}
+
+/* ---- リザルト: そのランで最も改造の進んだ個体 ---- */
+.champion {
+  border: 1px solid var(--c-legendary);
+  border-radius: var(--r-2);
+  padding: var(--sp-3) var(--sp-4);
+  background: linear-gradient(120deg, #ffcf5c14, var(--c-bg-deep) 55%);
+}
+.champion-body { display: flex; align-items: center; gap: var(--sp-4); }
+.champion-body canvas { image-rendering: pixelated; flex: 0 0 auto; }
+.champion-info { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.champion-name {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  color: var(--c-legendary);
+  line-height: 1.35;
+  word-break: break-all;
+}
+.champion-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+  color: var(--c-text-dim);
+}

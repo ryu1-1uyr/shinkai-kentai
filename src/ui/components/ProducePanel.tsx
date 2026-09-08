@@ -11,6 +11,7 @@ import {
 } from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
+import { DraftGauges } from './DraftGauges.tsx'
 import { Sprite } from './Sprite.tsx'
 
 function effectText(id: string, cfg: ReturnType<typeof getConfig>): string {
@@ -79,6 +80,8 @@ export function ProducePanel() {
           <span className="stat-value">{fmt(totalSharks(s.inv))}</span>
           <span className="stat-rate">+{fmt(sharkRate(s))}/s</span>
         </div>
+        <DraftGauges s={s} />
+
         <div className="tally">
           <span className="stat-label">累計生産</span>
           <span className="tally-value">{fmt(s.producedTotal)}</span>
