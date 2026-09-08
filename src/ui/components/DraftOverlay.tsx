@@ -1,6 +1,9 @@
 import { maskOf, powerAt, rateAt } from '../../game/mutations.ts'
+import { mutationName } from '../../game/mutations.ts'
+import { policyName } from '../../game/policies.ts'
 import { chooseDraft, getConfig, reroll } from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
+import { fill, t } from '../../text/index.ts'
 import { useGame } from '../useGame.ts'
 import { SharkIcon } from './SharkIcon.tsx'
 import { Sprite } from './Sprite.tsx'
@@ -28,17 +31,17 @@ export function DraftOverlay() {
     <div className="overlay">
       <div className="modal" data-draft={d.kind}>
         <div>
-          <div className="modal-title">{isPolicy ? '研究方針を決定' : '突然変異を確認'}</div>
+          <div className="modal-title">{isPolicy ? t.draft.policyTitle : t.draft.mutationTitle}</div>
           <div className="modal-sub">
             {isPolicy
-              ? `培養液を累計 ${fmt(s.cultureTotal)} 採取。実験の進め方を選ぶ（施設に作用する）`
-              : `累計 ${fmt(s.producedTotal)} 体を生産。以降に生まれる検体にのみ発現する（在庫の個体は変異しない）`}
+              ? fill(t.draft.policySub, { n: fmt(s.cultureTotal) })
+              : fill(t.draft.mutationSub, { n: fmt(s.producedTotal) })}
           </div>
         </div>
 
         {s.rerollsLeft > 0 && (
           <button className="reroll" onClick={reroll}>
-            ↻ 引き直す（残り {s.rerollsLeft} 回）
+            {fill(t.draft.reroll, { n: s.rerollsLeft })}
           </button>
         )}
 
@@ -51,7 +54,7 @@ export function DraftOverlay() {
                   <button key={m.id} className="card" data-rarity={m.rarity} onClick={() => chooseDraft(i)}>
                     <SharkIcon mask={maskOf(m)} height={40} />
                     <span className="card-rarity">{RARITY_LABEL[m.rarity]}</span>
-                    <span className="card-name">{m.name}</span>
+                    <span className="card-name">{mutationName(m)}</span>
                     {s.meta.showNumbers ? (
                       <span className="card-effect">
                         発現率 {(rateAt(m, next, cfg) * 100).toFixed(0)}% ／ 戦闘力 ×
@@ -59,13 +62,11 @@ export function DraftOverlay() {
                       </span>
                     ) : (
                       <span className="card-effect" data-unknown="true">
-                        未解析 — 希少度だけが手がかり
+                        {t.draft.unknown}
                       </span>
                     )}
                     {cur > 0 && (
-                      <span className="card-upgrade">
-                        R{cur} → R{next} に強化（発現率も倍率も上がる）
-                      </span>
+                      <span className="card-upgrade">{fill(t.draft.upgrade, { from: cur, to: next })}</span>
                     )}
                   </button>
                 )
@@ -77,7 +78,7 @@ export function DraftOverlay() {
                   <button key={p.id} className="card" data-kind="policy" onClick={() => chooseDraft(i)}>
                     <Sprite kind="policy" id={p.id} size={40} />
                     <span className="card-rarity">POLICY</span>
-                    <span className="card-name">{p.name}</span>
+                    <span className="card-name">{policyName(p)}</span>
                     <span className="card-effect">{p.detail(next)}</span>
                     {cur > 0 && (
                       <span className="card-upgrade">

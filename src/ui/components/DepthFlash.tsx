@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { isAscending } from '../../render/atmosphere.ts'
 import { useGame } from '../useGame.ts'
+import { t } from '../../text/index.ts'
 
 /**
  * 深度が切り替わった瞬間の演出。
@@ -47,8 +48,8 @@ export function DepthFlash() {
       <div className="depth-fx-flash" />
       {burst.kind === 'invert' && (
         <div className="depth-fx-notice">
-          <span className="depth-fx-alarm">深度計 異常</span>
-          <span className="depth-fx-sub">計器は上昇を示している。報告書上は正常として処理する。</span>
+          <span className="depth-fx-alarm">{t.invasion.flashTitle}</span>
+          <span className="depth-fx-sub">{t.invasion.flashSub}</span>
         </div>
       )}
     </div>

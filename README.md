@@ -39,6 +39,25 @@ node src/sim/rarity.ts         # レア度ごとのドラフト出現率
 node src/sim/species.ts        # 生成された複合サメの一覧
 ```
 
+## 表示テキスト
+
+画面に出る文字はすべて [src/text/ja.ts](src/text/ja.ts) の 1 枚に集めてある。
+語彙をまとめて見直せることと、翻訳するときにこの 1 枚を差し替えれば済むこと が目的。
+
+```ts
+// 数式はコードに残し、辞書には文言だけを置く
+detail: (lv) => fill(t.upgrade.clickPower.detail, { mult: (1 + 0.3 * lv).toFixed(1) })
+```
+
+`{mult}` のような波括弧が差し込みの位置で、`fill()` が埋める。
+
+ロケールを足すときは `en.ts` を `satisfies Text` で書いて
+[src/text/index.ts](src/text/index.ts) で選ぶ。型が同じ形を要求するので、
+**キーの抜けや余りはコンパイルで落ちる**。
+
+開発用パネル（`DebugPanel` / `SpriteLab`）の文字は入れていない。
+本番ビルドから丸ごと消えるうえ、プレイヤーには見えないため。
+
 ## デプロイ
 
 `main` に push すると GitHub Actions がビルドして GitHub Pages に配信する

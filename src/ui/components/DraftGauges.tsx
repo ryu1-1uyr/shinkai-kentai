@@ -1,5 +1,6 @@
 import type { GameState } from '../../game/state.ts'
 import { fmt } from '../format.ts'
+import { fill, t } from '../../text/index.ts'
 
 /**
  * 次のカードまでの進捗。
@@ -12,14 +13,14 @@ export function DraftGauges({ s }: { s: GameState }) {
   const rows = [
     {
       key: 'mutation',
-      label: '突然変異',
-      unit: '体',
+      label: t.gauge.mutation,
+      unit: t.resource.unitShark,
       have: s.producedTotal,
       need: s.nextDraftAt,
     },
     {
       key: 'policy',
-      label: '研究方針',
+      label: t.gauge.policy,
       unit: '',
       have: s.cultureTotal,
       need: s.nextPolicyAt,
@@ -37,7 +38,9 @@ export function DraftGauges({ s }: { s: GameState }) {
             <div className="gauge">
               <div className="gauge-fill" style={{ width: `${pct}%` }} />
             </div>
-            <span className="gauge-left">{isFinite(left) ? `あと ${fmt(left)}${r.unit}` : '打ち止め'}</span>
+            <span className="gauge-left">
+              {isFinite(left) ? fill(t.gauge.remaining, { left: fmt(left), unit: r.unit }) : t.gauge.done}
+            </span>
           </div>
         )
       })}

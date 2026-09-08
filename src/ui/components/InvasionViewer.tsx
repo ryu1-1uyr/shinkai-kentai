@@ -3,6 +3,7 @@ import { sortedByPower, totalSharks } from '../../game/inventory.ts'
 import { pixelIcon } from '../../render/icons.ts'
 import { sharkSprite } from '../../render/sharkSprite.ts'
 import { getConfig, getSpeed, getState } from '../../store/gameStore.ts'
+import { t } from '../../text/index.ts'
 
 /**
  * 突撃ビュワー。
@@ -367,7 +368,7 @@ export function InvasionViewer() {
   return (
     <div className="viewer">
       <canvas className="viewer-canvas" ref={canvasRef} />
-      {empty && <div className="viewer-empty">投入できる検体がない — 繁殖槽を増やせ</div>}
+      {empty && <div className="viewer-empty">{t.invasion.viewerEmpty}</div>}
     </div>
   )
 }

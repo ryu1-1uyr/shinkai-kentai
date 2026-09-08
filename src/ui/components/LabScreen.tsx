@@ -15,6 +15,7 @@ import { MUTATION_BY_ID, maskOf } from '../../game/mutations.ts'
 import { getMeta, purchaseNode, startNewRun } from '../../store/gameStore.ts'
 import { SharkIcon } from './SharkIcon.tsx'
 import { fmt } from '../format.ts'
+import { fill, t } from '../../text/index.ts'
 import { useGame } from '../useGame.ts'
 
 /**
@@ -80,22 +81,22 @@ export function LabScreen() {
     <div className="lab">
       <div className="lab-head">
         <div>
-          <div className="panel-title">研究所</div>
+          <div className="panel-title">{t.lab.title}</div>
           <div className="lab-budget">
             <span className="lab-budget-value">{fmt(meta.budget)}</span>
-            <span className="stat-label">研究予算</span>
+            <span className="stat-label">{t.lab.budget}</span>
           </div>
           <div className="lab-affordable" data-any={affordable > 0}>
-            {affordable > 0 ? `いま ${affordable} 件 取得できる` : '取得できる強化はない'}
+            {affordable > 0 ? fill(t.lab.affordable, { n: affordable }) : t.lab.affordableNone}
           </div>
         </div>
         <div className="lab-stats">
-          <span>実験回数 {meta.runs}</span>
-          <span>最高突破深度 {meta.bestDepth}</span>
-          <span>累計予算 {fmt(meta.lifetimeBudget)}</span>
+          <span>{fill(t.lab.runs, { n: meta.runs })}</span>
+          <span>{fill(t.lab.bestDepth, { n: meta.bestDepth })}</span>
+          <span>{fill(t.lab.lifetime, { n: fmt(meta.lifetimeBudget) })}</span>
         </div>
         <button className="btn" onClick={startNewRun}>
-          次の実験を開始する
+          {t.lab.start}
         </button>
       </div>
 
@@ -174,10 +175,10 @@ export function LabScreen() {
               </span>
               <span className="node-detail">{nodeDetail(meta, n.id)}</span>
               <span className="node-cost">
-                {taken && !numeric && <span className="node-mark">取得済み</span>}
-                {cost === null ? (numeric ? 'MAX' : '') : fmt(cost)}
+                {taken && !numeric && <span className="node-mark">{t.lab.taken}</span>}
+                {cost === null ? (numeric ? t.lab.max : '') : fmt(cost)}
                 {open && cost !== null && cost > meta.budget && (
-                  <span className="node-short">あと {fmt(cost - meta.budget)}</span>
+                  <span className="node-short">{fill(t.lab.short, { n: fmt(cost - meta.budget) })}</span>
                 )}
               </span>
             </button>

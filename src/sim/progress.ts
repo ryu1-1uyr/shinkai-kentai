@@ -4,6 +4,7 @@ import {
   buyUnlock,
   createMeta,
   nodeUnlocked,
+  nodeName,
   NUMERIC_UPGRADES,
   UNLOCK_BY_ID,
   UNLOCKS,
@@ -54,7 +55,7 @@ function spend(meta: ReturnType<typeof createMeta>): string[] {
       bought.push(bestId)
     } else {
       buyUnlock(meta, bestId)
-      bought.push(`★${UNLOCK_BY_ID.get(bestId)!.name}`)
+      bought.push(`★${nodeName(bestId)}`)
     }
   }
   return bought
@@ -122,5 +123,7 @@ for (let i = 1; i <= RUNS; i++) {
 
 console.log('\n到達深度の推移:')
 console.log('  ' + depths.join(' → '))
-console.log(`\n解禁済み: ${meta.unlocked.map((id) => UNLOCK_BY_ID.get(id)!.name).join(' / ') || 'なし'}`)
-console.log(`強化レベル: ${NUMERIC_UPGRADES.map((u) => `${u.name}${meta.levels[u.id] ?? 0}`).join(' ')}`)
+console.log(`\n解禁済み: ${meta.unlocked.map((id) => nodeName(id)).join(' / ') || 'なし'}`)
+console.log(
+  `強化レベル: ${NUMERIC_UPGRADES.map((u) => `${nodeName(u.id)}${meta.levels[u.id] ?? 0}`).join(' ')}`,
+)

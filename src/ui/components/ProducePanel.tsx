@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { BUILDINGS, costOf } from '../../game/buildings.ts'
+import { type BuildingId, BUILDINGS, buildingName, costOf } from '../../game/buildings.ts'
 import { totalSharks } from '../../game/inventory.ts'
 import { clickValue, critChance, critMult, cultureRate, launchRate, sharkRate } from '../../game/tick.ts'
 import {
@@ -10,26 +10,17 @@ import {
   manualClick,
   setAutoBuyTarget,
 } from '../../store/gameStore.ts'
+import { fill, t } from '../../text/index.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
 import { DraftGauges } from './DraftGauges.tsx'
 import { Sprite } from './Sprite.tsx'
 
-function effectText(id: string, cfg: ReturnType<typeof getConfig>): string {
-  switch (id) {
-    case 'tank':
-      return `培養液 +1.0/s・クリック +${cfg.click.perTankBonus}`
-    case 'feeder':
-      return '培養液 +10/s'
-    case 'breeder':
-      return `サメ +0.8/s（培養液 ${cfg.shark.cultureCost}/体）`
-    case 'accelerator':
-      return 'サメ生産 +20%'
-    case 'launcher':
-      return '投入速度 +15/s'
-    default:
-      return ''
-  }
+function effectText(id: BuildingId, cfg: ReturnType<typeof getConfig>): string {
+  const text = t.building[id].effect
+  if (id === 'tank') return fill(text, { bonus: cfg.click.perTankBonus })
+  if (id === 'breeder') return fill(text, { cost: cfg.shark.cultureCost })
+  return text
 }
 
 export function ProducePanel() {
@@ -69,47 +60,47 @@ export function ProducePanel() {
     <div className="col area-produce">
       <button className="click-area" ref={areaRef} onClick={onCollect}>
         <Sprite kind="resource" id="culture" size={48} />
-        <span className="click-label">培養液を採取</span>
-        <span className="click-hint">+{fmt(clickValue(s, cfg))} / クリック</span>
+        <span className="click-label">{t.resource.collect}</span>
+        <span className="click-hint">{fill(t.resource.perClick, { value: fmt(clickValue(s, cfg)) })}</span>
         {crit > 0 && (
           <span className="click-crit">
-            会心 {Math.round(crit * 100)}% ×{critMult(s).toFixed(1)}
+            {fill(t.resource.crit, { chance: Math.round(crit * 100), mult: critMult(s).toFixed(1) })}
           </span>
         )}
       </button>
 
       <div className="panel">
-        <div className="panel-title">資源</div>
+        <div className="panel-title">{t.resource.title}</div>
         <div className="stat" data-kind="culture">
           <Sprite kind="resource" id="culture" />
-          <span className="stat-label">培養液</span>
+          <span className="stat-label">{t.resource.culture}</span>
           <span className="stat-value">{fmt(s.culture)}</span>
           <span className="stat-rate">+{fmt(cultureRate(s))}/s</span>
         </div>
         <div className="stat" data-kind="shark">
           <Sprite kind="resource" id="shark" />
-          <span className="stat-label">検体</span>
+          <span className="stat-label">{t.resource.shark}</span>
           <span className="stat-value">{fmt(totalSharks(s.inv))}</span>
           <span className="stat-rate">+{fmt(sharkRate(s))}/s</span>
         </div>
         <DraftGauges s={s} />
 
         <div className="tally">
-          <span className="stat-label">累計生産</span>
+          <span className="stat-label">{t.resource.produced}</span>
           <span className="tally-value">{fmt(s.producedTotal)}</span>
-          <span className="tally-unit">体</span>
-          <span className="tally-species">{s.births.size} 種</span>
+          <span className="tally-unit">{t.resource.unitShark}</span>
+          <span className="tally-species">{fill(t.resource.unitKind, { n: s.births.size })}</span>
         </div>
         <div className="stat" data-kind="score">
           <Sprite kind="resource" id="score" />
-          <span className="stat-label">戦果</span>
+          <span className="stat-label">{t.resource.score}</span>
           <span className="stat-value">{fmt(s.score)}</span>
-          <span className="stat-rate">投入 {fmt(launchRate(s, cfg))}/s</span>
+          <span className="stat-rate">{fill(t.resource.launchRate, { rate: fmt(launchRate(s, cfg)) })}</span>
         </div>
       </div>
 
       <div className="panel scroll">
-        <div className="panel-title">設備</div>
+        <div className="panel-title">{t.building.title}</div>
         {BUILDINGS.map((b, i) => {
           const cost = costOf(b, s.buildings[i])
           const auto = getAutoBuyTarget() === i
@@ -123,12 +114,12 @@ export function ProducePanel() {
               >
                 <Sprite kind="building" id={b.id} />
                 <span className="buy-name">
-                  {b.name}
+                  {buildingName(b.id)}
                   <span className="buy-effect">{effectText(b.id, cfg)}</span>
                 </span>
                 <span className="buy-right">
                   <span className="buy-cost">{fmt(cost)}</span>
-                  <span className="buy-owned">所持 {s.buildings[i]}</span>
+                  <span className="buy-owned">{fill(t.building.owned, { n: s.buildings[i] })}</span>
                 </span>
               </button>
               {s.meta.autoBuyOne && (
@@ -136,8 +127,8 @@ export function ProducePanel() {
                   className="buy-auto"
                   data-on={auto}
                   data-idle={getAutoBuyMode() !== 'one'}
-                  title="定期発注の対象にする"
-                  aria-label={`${b.name}を定期発注する`}
+                  title={t.building.autoBuyHint}
+                  aria-label={fill(t.building.autoBuyLabel, { name: buildingName(b.id) })}
                   onClick={() => setAutoBuyTarget(i)}
                 >
                   {auto ? '☑' : '☐'}

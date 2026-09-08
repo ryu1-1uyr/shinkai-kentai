@@ -8,11 +8,13 @@ import {
   type MutationId,
   type MutationMask,
   maskOf,
+  mutationName,
   nameOfMask,
   offerWeight,
   powerOfMask,
 } from './mutations.ts'
-import { POLICIES, type PolicyDef } from './policies.ts'
+import { POLICIES, type PolicyDef, policyName } from './policies.ts'
+import { fill, t } from '../text/index.ts'
 import { type GameState, pushLog, refreshBirthDist, refreshPolicyFx, rng } from './state.ts'
 import { bossHp, depthNames, perDepthTime, targetCount, targetHp } from './targets.ts'
 
@@ -202,23 +204,27 @@ function beginDepth(s: GameState, cfg: Config): void {
 function advanceTarget(s: GameState, cfg: Config, overkill: number, mult: number): number {
   if (s.onBoss) {
     // 深度突破
-    pushLog(s, 'boss', `${s.bossName} を破壊`)
+    pushLog(s, 'boss', fill(t.log.bossDown, { name: s.bossName }))
     s.clearedDepth += 1
     if (cfg.invasion.timerModel === 'runWide') {
       s.timeLeft += cfg.invasion.runWideBonusPerDepth
     }
     s.depth += 1
     beginDepth(s, cfg)
-    pushLog(s, 'depth', `深度 ${s.depth} — ${depthNames(s.depth).zone}`)
+    pushLog(s, 'depth', fill(t.log.depth, { depth: s.depth, zone: depthNames(s.depth).zone }))
     return overkill * mult
   }
   s.destroyed += 1
   if (s.destroyed >= targetCount(s.depth, cfg)) {
-    pushLog(s, 'boss', `${s.bossName} が出現`)
+    pushLog(s, 'boss', fill(t.log.bossAppear, { name: s.bossName }))
     s.onBoss = true
     s.currentHp = bossHp(s.depth, cfg)
   } else {
-    pushLog(s, 'hit', `${s.normalName} を破壊  ${s.destroyed}/${targetCount(s.depth, cfg)}`)
+    pushLog(
+      s,
+      'hit',
+      fill(t.log.hit, { name: s.normalName, done: s.destroyed, total: targetCount(s.depth, cfg) }),
+    )
     // 同じ深度の中でも、次の標的は別の建物にする
     const pool = depthNames(s.depth).normal
     s.normalName = pool[Math.floor(rng(s) * pool.length)]
@@ -271,11 +277,11 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
          */
         const owned = s.ranks.size
         if (owned < LOG_RECORD_FROM) {
-          if (isNotable(mask)) pushLog(s, 'birth', `${nameOfMask(mask)} が誕生`, mask)
+          if (isNotable(mask)) pushLog(s, 'birth', fill(t.log.birth, { name: nameOfMask(mask) }), mask)
         } else if (record && traits >= 3) {
-          pushLog(s, 'record', `より強力なサメ ${nameOfMask(mask)} が誕生`, mask)
+          pushLog(s, 'record', fill(t.log.record, { name: nameOfMask(mask) }), mask)
         } else if (traits >= owned - LOG_TRAIT_SLACK) {
-          pushLog(s, 'birth', `${nameOfMask(mask)} が誕生`, mask)
+          pushLog(s, 'birth', fill(t.log.birth, { name: nameOfMask(mask) }), mask)
         }
       }
     }
@@ -304,7 +310,7 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
   // --- フェーズ遷移 ---
   if (s.phase === 'culture' && s.t >= cfg.culturePhaseSec) {
     s.phase = 'invasion'
-    pushLog(s, 'depth', `深度 ${s.depth} — ${depthNames(s.depth).zone}`)
+    pushLog(s, 'depth', fill(t.log.depth, { depth: s.depth, zone: depthNames(s.depth).zone }))
     s.timeLeft = cfg.invasion.timerModel === 'runWide' ? cfg.invasion.runWideBase : 0
     beginDepth(s, cfg)
   }
@@ -327,13 +333,13 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
       // 予備電源。逆探知の完了を 1 回だけ遅らせる
       s.reserveUsed = true
       s.timeLeft += s.meta.reserveSeconds
-      pushLog(s, 'system', `予備電源が作動  +${s.meta.reserveSeconds} 秒`)
+      pushLog(s, 'system', fill(t.log.reserve, { sec: s.meta.reserveSeconds }))
     } else {
       if (s.meta.lastStand) {
-        pushLog(s, 'system', '緊急浮上 — 残存する検体をすべて投入')
+        pushLog(s, 'system', t.log.lastStand)
         finalVolley(s, cfg)
       }
-      pushLog(s, 'system', '逆探知が完了。軌道より照射を確認')
+      pushLog(s, 'system', t.log.traced)
       s.phase = 'over'
       s.endReason = 'timeout'
     }
@@ -390,7 +396,12 @@ export function applyDraft(s: GameState, cfg: Config, index: number): void {
     const chosen = d.offers[i]
     s.ranks.set(chosen.id, (s.ranks.get(chosen.id) ?? 0) + 1)
     refreshBirthDist(s, cfg)
-    pushLog(s, 'draft', `${chosen.name} を確認  R${s.ranks.get(chosen.id)}`, maskOf(chosen))
+    pushLog(
+      s,
+      'draft',
+      fill(t.log.draft, { name: mutationName(chosen), rank: s.ranks.get(chosen.id)! }),
+      maskOf(chosen),
+    )
     s.draftCount += 1
     s.nextDraftAt +=
       cfg.mutation.draftThresholdBase *
@@ -401,7 +412,7 @@ export function applyDraft(s: GameState, cfg: Config, index: number): void {
     s.policies.set(chosen.id, (s.policies.get(chosen.id) ?? 0) + 1)
     refreshPolicyFx(s)
     refreshBirthDist(s, cfg)
-    pushLog(s, 'policy', `${chosen.name} を採用  R${s.policies.get(chosen.id)}`)
+    pushLog(s, 'policy', fill(t.log.policy, { name: policyName(chosen), rank: s.policies.get(chosen.id)! }))
     s.policyCount += 1
     s.nextPolicyAt += cfg.policy.thresholdBase * Math.pow(cfg.policy.thresholdGrowth, s.policyCount)
   }

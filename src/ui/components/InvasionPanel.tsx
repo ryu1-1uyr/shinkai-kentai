@@ -1,5 +1,6 @@
 import { bossHp, depthName, targetCount, targetHp } from '../../game/targets.ts'
 import { getConfig } from '../../store/gameStore.ts'
+import { fill, t } from '../../text/index.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
 import { CircleTimer } from './CircleTimer.tsx'
@@ -16,16 +17,16 @@ export function InvasionPanel() {
     return (
       <div className="col area-invasion">
         <div className="panel is-primary">
-          <div className="panel-title">培養フェーズ</div>
+          <div className="panel-title">{t.phase.culture}</div>
           <CircleTimer
             ratio={left / cfg.culturePhaseSec}
             value={Math.ceil(left).toString()}
-            caption="侵略開始まで"
+            caption={t.phase.untilInvasion}
           />
-          <p className="idle-note">検体は投入するまで失われない。いま生産した分はそのまま戦力になる。</p>
+          <p className="idle-note">{t.invasion.idleNote}</p>
         </div>
 
-        <LogPanel s={s} title="観測記録" empty="まだ記録がない。検体を生産すると実験機会が訪れる。" />
+        <LogPanel s={s} title={t.log.title} empty={t.log.emptyCulture} />
       </div>
     )
   }
@@ -64,14 +65,12 @@ export function InvasionPanel() {
         </div>
 
         <div className="launch-info">
-          <span>
-            破壊 {s.destroyed} / {total}
-          </span>
-          <span>突破深度 {s.clearedDepth}</span>
+          <span>{fill(t.invasion.destroyed, { done: s.destroyed, total })}</span>
+          <span>{fill(t.invasion.clearedDepth, { n: s.clearedDepth })}</span>
         </div>
       </div>
 
-      <LogPanel s={s} title="観測記録" empty="まだ記録がない。" />
+      <LogPanel s={s} title={t.log.title} empty={t.log.emptyInvasion} />
     </div>
   )
 }

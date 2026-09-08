@@ -1,6 +1,7 @@
 import { cachedPower, hasMutation, MUTATIONS, nameOfMask } from '../../game/mutations.ts'
 import { depthName } from '../../game/targets.ts'
 import { getConfig, getLastAward, setScreen } from '../../store/gameStore.ts'
+import { fill, t } from '../../text/index.ts'
 import { fmt, mmss } from '../format.ts'
 import { useGame } from '../useGame.ts'
 import { SharkIcon } from './SharkIcon.tsx'
@@ -42,49 +43,51 @@ export function ResultOverlay() {
       <div className="modal">
         <div>
           <div className="modal-title">
-            <Sprite kind="ui" id="beam" /> 施設が逆探知されました
+            <Sprite kind="ui" id="beam" /> {t.result.title}
           </div>
-          <div className="modal-sub">軌道上より照射を確認。研究施設は消失。実験記録のみが残された。</div>
+          <div className="modal-sub">{t.result.sub}</div>
         </div>
 
         <div className="result-grid">
           <div className="result-row">
-            <span className="stat-label">突破深度</span>
+            <span className="stat-label">{t.result.clearedDepth}</span>
             <span className="num">{s.clearedDepth}</span>
           </div>
           <div className="result-row">
-            <span className="stat-label">到達地点</span>
+            <span className="stat-label">{t.result.zone}</span>
             <span className="num">{depthName(s.depth).zone}</span>
           </div>
           <div className="result-row">
-            <span className="stat-label">総戦果</span>
+            <span className="stat-label">{t.result.score}</span>
             <span className="num">{fmt(s.score)}</span>
           </div>
           <div className="result-row">
-            <span className="stat-label">経過時間</span>
+            <span className="stat-label">{t.result.elapsed}</span>
             <span className="num">{mmss(s.t)}</span>
           </div>
           <div className="result-row">
-            <span className="stat-label">検体生産数</span>
+            <span className="stat-label">{t.result.produced}</span>
             <span className="num">{fmt(s.producedTotal)}</span>
           </div>
           <div className="result-row">
-            <span className="stat-label">研究予算</span>
+            <span className="stat-label">{t.result.award}</span>
             <span className="num award">+{fmt(getLastAward())}</span>
           </div>
         </div>
 
         {champion && champion.traits > 0 && (
           <div className="champion">
-            <div className="panel-title">今回の最高到達サメ</div>
+            <div className="panel-title">{t.result.championTitle}</div>
             <div className="champion-body">
               <SharkIcon mask={champion.mask} height={64} />
               <div className="champion-info">
                 <div className="champion-name">{nameOfMask(champion.mask)}</div>
                 <div className="champion-stats">
-                  <span>変異 {champion.traits} 種</span>
-                  <span>戦闘力 {fmt(champion.power)}</span>
-                  <span>{fmt(champion.count)} 体</span>
+                  {fill(t.result.championInfo, {
+                    traits: champion.traits,
+                    power: fmt(champion.power),
+                    count: fmt(champion.count),
+                  })}
                 </div>
               </div>
             </div>
@@ -92,7 +95,7 @@ export function ResultOverlay() {
         )}
 
         <div>
-          <div className="panel-title">実験記録 — 生み出した検体</div>
+          <div className="panel-title">{t.result.speciesTitle}</div>
           {species.map((sp) => (
             <div key={sp.mask} className="stack">
               <SharkIcon mask={sp.mask} height={30} />
@@ -104,7 +107,7 @@ export function ResultOverlay() {
         </div>
 
         <button className="btn" onClick={() => setScreen('lab')}>
-          研究所へ
+          {t.result.toLab}
         </button>
       </div>
     </div>

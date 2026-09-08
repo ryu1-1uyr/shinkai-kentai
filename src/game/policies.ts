@@ -12,6 +12,8 @@
  *  3. 培養液を稼ぐこと自体に目的が生まれる（いまは検体を作るための中間素材でしかない）
  */
 
+import { fill, t } from '../text/index.ts'
+
 export type PolicyId =
   | 'overdraw'
   | 'swarmSense'
@@ -26,8 +28,7 @@ export type PolicyId =
 
 export type PolicyDef = {
   id: PolicyId
-  name: string
-  /** ランク r のときの説明 */
+  /** ランク r のときの説明。文言は text/ja.ts、数式はここ */
   detail: (rank: number) => string
   /** 何度でも取れるか。false なら 1 回だけ */
   stackable: boolean
@@ -37,77 +38,72 @@ export type PolicyDef = {
 export const POLICIES: PolicyDef[] = [
   {
     id: 'overdraw',
-    name: '過剰採取',
-    detail: (r) => `手動採取が ${Math.min(75, 25 * r)}% の確率で会心する`,
+    detail: (r) => fill(t.policy.overdraw.detail, { pct: Math.min(75, 25 * r) }),
     stackable: true,
     maxRank: 3,
   },
   {
     id: 'swarmSense',
-    name: '群体感知',
-    detail: (r) => `在庫の検体 10 体につき手動採取 +${2 * r}%（上限 +${200 * r}%）`,
+    detail: (r) => fill(t.policy.swarmSense.detail, { pct: 2 * r, cap: 200 * r }),
     stackable: true,
     maxRank: 3,
   },
   {
     id: 'catalyst',
-    name: '触媒投与',
-    detail: (r) => `突然変異の発現率 ×${(1 + 0.15 * r).toFixed(2)}`,
+    detail: (r) => fill(t.policy.catalyst.detail, { mult: (1 + 0.15 * r).toFixed(2) }),
     stackable: true,
     maxRank: 3,
   },
   {
     id: 'condensate',
-    name: '培養液の濃縮',
-    detail: (r) => `培養液の自動生産 ×${(1 + 0.22 * r).toFixed(2)}`,
+    detail: (r) => fill(t.policy.condensate.detail, { mult: (1 + 0.22 * r).toFixed(2) }),
     stackable: true,
     maxRank: 4,
   },
   {
     id: 'forcing',
-    name: '促成培養',
-    detail: (r) => `検体の生産速度 ×${(1 + 0.2 * r).toFixed(2)}`,
+    detail: (r) => fill(t.policy.forcing.detail, { mult: (1 + 0.2 * r).toFixed(2) }),
     stackable: true,
     maxRank: 4,
   },
   {
     id: 'pressurize',
-    name: '加圧射出',
-    detail: (r) => `投入速度 ×${(1 + 0.18 * r).toFixed(2)}`,
+    detail: (r) => fill(t.policy.pressurize.detail, { mult: (1 + 0.18 * r).toFixed(2) }),
     stackable: true,
     maxRank: 4,
   },
   {
     id: 'recycle',
-    name: '検体の再利用',
-    detail: (r) => `投入した検体の ${6 * r}% が在庫へ戻る`,
+    detail: (r) => fill(t.policy.recycle.detail, { pct: 6 * r }),
     stackable: true,
     maxRank: 3,
   },
   {
     id: 'preempt',
-    name: '実験の前倒し',
-    detail: (r) => `次の突然変異までの必要数 −${Math.min(45, 15 * r)}%`,
+    detail: (r) => fill(t.policy.preempt.detail, { pct: Math.min(45, 15 * r) }),
     stackable: true,
     maxRank: 3,
   },
   {
     id: 'reprocess',
-    name: '廃液の再処理',
-    detail: (r) => `検体 1 体の生産に要する培養液 −${Math.min(45, 15 * r)}%`,
+    detail: (r) => fill(t.policy.reprocess.detail, { pct: Math.min(45, 15 * r) }),
     stackable: true,
     maxRank: 3,
   },
   {
     id: 'preserve',
-    name: '標本の保存',
-    detail: (r) => `ラン終了時の研究予算 +${15 * r}%`,
+    detail: (r) => fill(t.policy.preserve.detail, { pct: 15 * r }),
     stackable: true,
     maxRank: 3,
   },
 ]
 
 export const POLICY_BY_ID = new Map(POLICIES.map((p) => [p.id, p]))
+
+/** 表示名は text/ja.ts が持つ */
+export function policyName(def: { id: PolicyId }): string {
+  return t.policy[def.id].name
+}
 
 export type PolicyRanks = Map<PolicyId, number>
 
