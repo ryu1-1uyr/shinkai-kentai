@@ -23,6 +23,7 @@ Node は Volta で 24.20.0 に固定してある（`package.json` の `volta` �
 | `npm run build`     | 型チェック + 本番ビルド                                                    |
 | `npm run typecheck` | 型チェックのみ                                                             |
 | `npm run sim`       | バランスのシミュレーション（ドラフト方針 / タイマー方式 / 購入比率の比較） |
+| `npm run format`    | Prettier で整形                                                            |
 
 ### バランスを数字で確かめる
 
@@ -37,6 +38,35 @@ node src/sim/luck.ts           # 運がランに与える影響
 node src/sim/rarity.ts         # レア度ごとのドラフト出現率
 node src/sim/species.ts        # 生成された複合サメの一覧
 ```
+
+## デプロイ
+
+`main` に push すると GitHub Actions がビルドして GitHub Pages に配信する
+（[.github/workflows/deploy.yml](.github/workflows/deploy.yml)）。
+公開先は <https://shark.ryu-reu.me>。
+
+配信先を変えるときに触るのは 3 箇所。
+
+| 場所                          | 何を持っているか                                                     |
+| ----------------------------- | -------------------------------------------------------------------- |
+| `public/CNAME`                | 独自ドメイン。ビルド成果物にそのまま入る                             |
+| `vite.config.ts` の `base`    | 配信するパス。独自ドメインの直下なら `/`                             |
+| リポジトリの Settings → Pages | Source を GitHub Actions にする。Custom domain は CNAME から拾われる |
+
+サブパス（`ryu1-1uyr.github.io/<repo>/`）へ置く場合は `base` を `/<repo>/` にする。
+スプライトの読み込みは `import.meta.env.BASE_URL` を前置きしているので、
+`base` を変えれば追従する。
+
+### DNS
+
+`ryu-reu.me` の DNS に CNAME レコードを 1 本足す。
+
+```
+shark   CNAME   ryu1-1uyr.github.io.
+```
+
+反映されると Pages 側で証明書が発行され、Settings → Pages の
+**Enforce HTTPS** が有効にできるようになる。
 
 ## ドキュメント
 

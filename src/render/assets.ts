@@ -12,7 +12,12 @@
  * 部位の位置合わせは画像の中で済ませる（アンカー指定は不要）。
  */
 
-const BASE_PATH = '/sprites'
+/*
+ * Vite の base を前置きする。カスタムドメインの直下に置くなら '/sprites' だが、
+ * ユーザーページのサブパス（例 /inkurimentaru/）に置いたときに 404 になるため、
+ * ビルド時の base をそのまま使う。
+ */
+const BASE_PATH = `${import.meta.env.BASE_URL}sprites`.replace('//', '/')
 
 /** 読み込み済み（null は「無い」と確定したもの） */
 const loaded = new Map<string, HTMLImageElement | null>()
