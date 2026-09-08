@@ -49,8 +49,13 @@
     height: 100%;
     overflow: hidden;
     grid-template-columns: 220px 1fr 196px;
+    /*
+     * HUD を中央・右の 2 列ぶんに詰め、左の列を上端まで伸ばす。
+     * 空いた分はすべて採取ボタンに渡す。連打が主な操作なので、
+     * ここだけは指で狙いを外さない大きさを確保したい。
+     */
     grid-template-areas:
-      'hud      hud       hud'
+      'produce  hud       hud'
       'produce  invasion  stock';
     gap: var(--sp-1);
     /* ノッチのある端末を横にすると、左右が切り欠きに隠れる */
@@ -162,12 +167,12 @@
     justify-content: center;
     align-content: center;
     gap: var(--sp-1) var(--sp-2);
-    padding: var(--sp-1) var(--sp-2);
-    min-height: 48px;
+    padding: var(--sp-2);
+    min-height: 84px;
     font-size: var(--fs-sm);
   }
   .click-area .sprite {
-    --sprite-size: 20px;
+    --sprite-size: 28px;
   }
   .click-label {
     font-size: var(--fs-md);
@@ -200,12 +205,28 @@
     height: 84px;
   }
 
-  /* 幅 196px に長い複合名は収まらない。折り返すと 1 文字ずつ縦に並ぶ */
+  /*
+   * 複合名は 20 文字を超えるので 1 行には収まらない。
+   * 省略するとどのサメか分からなくなるため、名前だけ 2 行目に落として
+   * 全文を出す。1 行目は絵・頭数・戦闘力。
+   */
+  .stack {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 0;
+    padding: 2px 0;
+  }
   .stack-name {
+    order: 1;
+    flex-basis: 100%;
     min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    font-size: var(--fs-xs);
+    line-height: 1.3;
+    color: var(--c-text-dim);
+    overflow-wrap: anywhere;
+  }
+  .stack .shark-icon {
+    height: 18px;
   }
 
   /* --- ドラフト・リザルト --- */
@@ -218,6 +239,17 @@
     gap: var(--sp-1);
     max-height: 100%;
     overflow-y: auto;
+  }
+  /*
+   * 中央寄せのままだと上下に大きな余白が残っていた。
+   * カードに高さを持たせて、そのぶんモーダル全体を縦に広げる。
+   */
+  .modal > .cards {
+    flex: 1 1 auto;
+    min-height: 210px;
+  }
+  .card {
+    justify-content: center;
   }
   /* リザルトが少しだけ溢れるので、最後の操作は常に見える位置に貼り付ける */
   .modal > .btn {
@@ -238,17 +270,22 @@
     gap: 2px;
   }
   .card .sprite {
-    --sprite-size: 24px;
+    --sprite-size: 56px;
   }
   /*
    * 変異のサメ絵を縮める。
    * カードは縦並びの flex なので、指定しないと横幅いっぱいに引き伸ばされる。
    * 高さだけ指定すると縦横比が壊れてサメが潰れるため、幅は auto で追従させる。
    */
+  /*
+   * カードの幅に合わせて大きく見せる。
+   * 高さを指定して幅を auto にすると、横長のサメがカードからはみ出す。
+   * 幅を基準にして高さを追従させれば、どの組み合わせでも収まる。
+   */
   .card .shark-icon {
-    height: 28px;
-    width: auto;
-    align-self: center;
+    width: 100%;
+    height: auto;
+    align-self: stretch;
   }
   .card-name {
     font-size: var(--fs-sm);
