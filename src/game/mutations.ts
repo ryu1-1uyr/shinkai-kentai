@@ -201,23 +201,83 @@ export function cachedPower(
 }
 
 /**
+ * 分布に残す組み合わせの数。
+ *
+ * 変異は独立にロールされるので、組み合わせは 2^(取得数) 通りある。
+ * 16 種で 65536 通りになり、毎ティック全部に頭数を配ると 21 ms かかって
+ * ゲームが破綻する。上限を置いて打ち切る。
+ *
+ * 残す基準を 2 つに分けているのは、片方だけでは足りないため。
+ *  出やすい順  … 在庫や記録に並ぶ見た目を保つ。落とすと通常サメだらけになる
+ *  期待ダメージ順 … 戦闘力を保つ。ダメージのほとんどは「滅多に出ないが桁違いに強い個体」が
+ *                 担っているので、出やすい順だけで切ると戦力が消し飛ぶ
+ */
+export const DIST_KEEP_COMMON = 1024
+export const DIST_KEEP_STRONG = 1024
+
+/**
  * いま生まれるサメの mask 別出現確率。各変異が独立にロールされる。
  * 戻り値は [mask, probability] の配列で、確率の合計は 1。
+ *
+ * 打ち切りは展開の途中で行う。全部展開してから間引くと、
+ * 変異 20 種で 100 万件を一度作ることになって間引く前に落ちる。
+ *
+ * 途中の要素はそれぞれ「まだ展開していない変異ぶんの部分木」を持つが、
+ * その部分木が最終的に持つ確率もダメージも、残りの変異による同じ係数が
+ * 掛かるだけなので、途中の p と p*戦闘力 で順位を付ければ
+ * 最終的な寄与の順位と一致する。
  */
 export function birthDistribution(ranks: MutationRanks, cfg: Config): Array<[MutationMask, number]> {
-  let dist: Array<[MutationMask, number]> = [[0, 1]]
+  const cap = DIST_KEEP_COMMON + DIST_KEEP_STRONG
+  // [mask, 確率, 戦闘力]。戦闘力は間引きの順位付けにだけ使う
+  let dist: Array<[MutationMask, number, number]> = [[0, 1, cfg.shark.basePower]]
   for (const def of MUTATIONS) {
     const rank = ranks.get(def.id) ?? 0
     if (rank <= 0) continue
     const p = rateAt(def, rank, cfg)
-    const next: Array<[MutationMask, number]> = []
-    for (const [mask, prob] of dist) {
-      if (prob * (1 - p) > 0) next.push([mask, prob * (1 - p)])
-      if (prob * p > 0) next.push([addMutation(mask, def), prob * p])
+    const mult = powerAt(def, rank, cfg)
+    const next: Array<[MutationMask, number, number]> = []
+    for (const [mask, prob, pw] of dist) {
+      if (prob * (1 - p) > 0) next.push([mask, prob * (1 - p), pw])
+      if (prob * p > 0) next.push([addMutation(mask, def), prob * p, pw * mult])
     }
-    dist = next
+    dist = next.length > cap ? prune(next) : next
   }
-  return dist
+  return normalize(dist)
+}
+
+/** 出やすい順の上位と、期待ダメージの大きい順の上位を残す */
+function prune(rows: Array<[MutationMask, number, number]>): Array<[MutationMask, number, number]> {
+  const byProb = [...rows].sort((a, b) => b[1] - a[1]).slice(0, DIST_KEEP_COMMON)
+  const byDamage = [...rows].sort((a, b) => b[1] * b[2] - a[1] * a[2]).slice(0, DIST_KEEP_STRONG)
+  const keep = new Map<MutationMask, [MutationMask, number, number]>()
+  for (const r of byProb) keep.set(r[0], r)
+  for (const r of byDamage) keep.set(r[0], r)
+  return [...keep.values()]
+}
+
+/**
+ * 間引きで落ちたぶんの確率を戻して合計を 1 にする。
+ *
+ * 全体を一律に割り増すと、滅多に出ない最強個体の確率まで持ち上がって
+ * 期待戦闘力が何桁も膨らむ。割り増すのは出やすい側だけにする。
+ */
+function normalize(rows: Array<[MutationMask, number, number]>): Array<[MutationMask, number]> {
+  let mass = 0
+  for (const r of rows) mass += r[1]
+  if (mass >= 1 - 1e-12) return rows.map((r) => [r[0], r[1]])
+
+  const order = [...rows].sort((a, b) => b[1] - a[1])
+  const common = new Set(order.slice(0, DIST_KEEP_COMMON).map((r) => r[0]))
+  let commonMass = 0
+  let strongMass = 0
+  for (const r of rows) {
+    if (common.has(r[0])) commonMass += r[1]
+    else strongMass += r[1]
+  }
+  if (commonMass <= 0) return rows.map((r) => [r[0], r[1]])
+  const scale = (1 - strongMass) / commonMass
+  return rows.map((r) => [r[0], common.has(r[0]) ? r[1] * scale : r[1]])
 }
 
 /** サメ 1 体あたりの期待戦闘力  E = Π (1 + p*(m-1)) */
