@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 import { sortedByPower, totalSharks } from '../../game/inventory.ts'
-import { launchRate } from '../../game/tick.ts'
 import { pixelIcon } from '../../render/icons.ts'
 import { sharkSprite } from '../../render/sharkSprite.ts'
 import { getConfig, getSpeed, getState } from '../../store/gameStore.ts'
@@ -227,7 +226,6 @@ export function InvasionViewer() {
       last = now
 
       const s = getState()
-      const cfg = getConfig()
       const ground = h - 10
       const hitX = w - 46
       const buildingH = Math.min(h - 16, 92)
@@ -242,7 +240,9 @@ export function InvasionViewer() {
       // --- 湧かせる ---
       // 階層ごとに、決まった数だけ湧かせる。投入速度は「1 匹が何匹ぶんか」に吸わせる
       if (s.phase === 'invasion' && !s.pendingDraft) {
-        const tiers = tiersFor(launchRate(s, cfg) * getSpeed())
+        // 名目の投入速度ではなく、実際に出撃した数で描く。
+        // 在庫が尽きているときに居ないサメを流さないため
+        const tiers = tiersFor(s.launchedPerSec * getSpeed())
         for (let i = 0; i < accs.length; i++) {
           const tier = tiers[i]
           if (!tier) {

@@ -55,6 +55,12 @@ export type GameState = {
   birthDist: Array<[MutationMask, number]>
   /** このランで生まれた個体の、変異数の最高記録 */
   bestTraits: number
+  /**
+   * 直近で実際に出撃した数（毎秒）。
+   * 名目の投入速度は在庫が足りないと出しきれないので、
+   * 描画側が実態どおりに見せるためにこちらを使う。
+   */
+  launchedPerSec: number
   /** mask ごとの戦闘力。ドラフトでランクが動いたときだけ捨てる */
   powerCache: PowerCache
 
@@ -117,6 +123,7 @@ export function createState(cfg: Config, seed: number, meta?: MetaEffects): Game
     ranks: new Map<MutationId, number>(),
     birthDist: [[0, 1]],
     bestTraits: 0,
+    launchedPerSec: 0,
     powerCache: new Map(),
     producedTotal: 0,
     nextDraftAt: eff.earlyDraft ? 10 : cfg.mutation.draftThresholdBase,

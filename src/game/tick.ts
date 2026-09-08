@@ -33,6 +33,9 @@ const LOG_RECORD_FROM = 7
 /** 変異が増えたあと、記録に残すのに必要な変異数（取得済みの数からの引き算） */
 const LOG_TRAIT_SLACK = 3
 
+/** 実出撃数のならし具合。1 に近いほど追従が速く、値が跳ねる */
+const LAUNCH_SMOOTH = 0.2
+
 /** その mask が持つ変異の数 */
 function traitCount(mask: MutationMask): number {
   let n = 0
@@ -311,6 +314,8 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
   // --- 侵略 ---
   const n = launchRate(s, cfg) * dt
   const { launched, damage } = launchWeakest(s.inv, n, s.ranks, cfg, s.powerCache)
+  // 在庫が足りずに出しきれないことがあるので、実際に出た数をならして持っておく
+  s.launchedPerSec += (launched / dt - s.launchedPerSec) * LAUNCH_SMOOTH
   // 検体の再利用: 投入した個体の一部が在庫へ戻る
   if (s.policyFx.recycle > 0 && launched > 0) addSharks(s.inv, 0, launched * s.policyFx.recycle)
   applyDamage(s, cfg, damage)
