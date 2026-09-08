@@ -19,7 +19,8 @@ for (const [label, draft] of [['分散寄り', 'spread'], ['最適化', 'greedyE
   const dt = 1 / cfg.tickHz
   while (s.phase !== 'over' && s.t < 900) {
     tick(s, input, cfg)
-    if (s.pendingOffers) applyDraft(s, cfg, chooser(s.pendingOffers, s, cfg))
+    if (s.pendingDraft)
+      applyDraft(s, cfg, s.pendingDraft.kind === 'mutation' ? chooser(s.pendingDraft.offers, s, cfg) : 0)
     if (Math.round(s.t / dt) % cfg.tickHz === 0)
       autoBuy(s, cfg, BUY_RATIOS.balanced, cultureRate(s) + clickValue(s, cfg) * input.clicksPerSec)
   }

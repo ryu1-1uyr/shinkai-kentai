@@ -12,7 +12,8 @@ import {
   offerWeight,
   powerOfMask,
 } from './mutations.ts'
-import { type GameState, pushLog, refreshBirthDist, rng } from './state.ts'
+import { POLICIES, type PolicyDef } from './policies.ts'
+import { type GameState, pushLog, refreshBirthDist, refreshPolicyFx, rng } from './state.ts'
 import { bossHp, depthName, perDepthTime, targetCount, targetHp } from './targets.ts'
 
 /** そのティックのプレイヤー入力。シミュレータでは方針関数が埋める */
@@ -51,7 +52,7 @@ export function cultureRate(s: GameState): number {
   let synergy = 1
   if (s.meta.tankSynergy) synergy *= 1 + owned(s, 'tank') * 0.02
   if (s.meta.feederSynergy) synergy *= 1 + owned(s, 'feeder') * 0.03
-  return r * s.meta.cultureMult * synergy
+  return r * s.meta.cultureMult * synergy * s.policyFx.cultureMult
 }
 
 export function clickValue(s: GameState, cfg: Config): number {
@@ -59,7 +60,14 @@ export function clickValue(s: GameState, cfg: Config): number {
   BUILDINGS.forEach((b, i) => {
     if (b.clickBonus) tanks += s.buildings[i]
   })
-  return cfg.click.base * (1 + tanks * cfg.click.perTankBonus) * s.meta.clickMult
+  // 群体感知: 在庫の検体数に応じてクリックが伸びる。
+  // これがあると、序盤しか効かなかったクリックが後半まで意味を持つ
+  const fx = s.policyFx
+  const stock =
+    fx.clickPerStock > 0
+      ? Math.min(fx.clickPerStockCap, (totalSharks(s.inv) / 10) * fx.clickPerStock)
+      : 0
+  return cfg.click.base * (1 + tanks * cfg.click.perTankBonus) * s.meta.clickMult * (1 + stock)
 }
 
 export function sharkRate(s: GameState): number {
@@ -70,7 +78,7 @@ export function sharkRate(s: GameState): number {
     if (b.sharkRateMult) mult += b.sharkRateMult * s.buildings[i]
   })
   const synergy = s.meta.breederSynergy ? 1 + owned(s, 'breeder') * 0.02 : 1
-  return base * mult * s.meta.sharkRateMult * synergy
+  return base * mult * s.meta.sharkRateMult * synergy * s.policyFx.sharkRateMult
 }
 
 export function launchRate(s: GameState, cfg: Config): number {
@@ -79,7 +87,7 @@ export function launchRate(s: GameState, cfg: Config): number {
     if (b.launchRate) r += b.launchRate * s.buildings[i]
   })
   const synergy = s.meta.launcherSynergy ? 1 + owned(s, 'launcher') * 0.03 : 1
-  return r * s.meta.launchMult * synergy
+  return r * s.meta.launchMult * synergy * s.policyFx.launchMult
 }
 
 /**
@@ -114,6 +122,21 @@ function rollOffers(s: GameState, cfg: Config): MutationDef[] {
         break
       }
     }
+  }
+  return offers
+}
+
+/** 研究方針の候補を選ぶ。上限に達していないものから無作為に */
+function rollPolicies(s: GameState, cfg: Config): PolicyDef[] {
+  const pool = POLICIES.filter((p) => (s.policies.get(p.id) ?? 0) < p.maxRank)
+  const offers: PolicyDef[] = []
+  const picked = new Set<string>()
+  const size = Math.min(cfg.policy.draftSize, pool.length)
+  while (offers.length < size) {
+    const cand = pool[Math.floor(rng(s) * pool.length)]
+    if (picked.has(cand.id)) continue
+    picked.add(cand.id)
+    offers.push(cand)
   }
   return offers
 }
@@ -161,20 +184,23 @@ function advanceTarget(s: GameState, cfg: Config, overkill: number, mult: number
 
 export function tick(s: GameState, input: TickInput, cfg: Config): void {
   // ドラフト提示中は選択されるまで一切進行しない
-  if (s.phase === 'over' || s.pendingOffers) return
+  if (s.phase === 'over' || s.pendingDraft) return
   const dt = 1 / cfg.tickHz
   s.t += dt
 
   // --- 培養液 ---
-  s.culture += cultureRate(s) * dt
-  s.culture += clickValue(s, cfg) * (input.clicksPerSec + s.meta.autoClick) * dt
+  const gained =
+    cultureRate(s) * dt + clickValue(s, cfg) * (input.clicksPerSec + s.meta.autoClick) * dt
+  s.culture += gained
+  s.cultureTotal += gained
 
   // --- サメ生産 ---
   const want = sharkRate(s) * dt
-  const affordable = s.culture / cfg.shark.cultureCost
+  const sharkCost = cfg.shark.cultureCost * s.policyFx.sharkCostMult
+  const affordable = s.culture / sharkCost
   const born = Math.min(want, affordable)
   if (born > 0) {
-    s.culture -= born * cfg.shark.cultureCost
+    s.culture -= born * sharkCost
     s.producedTotal += born
     for (const [mask, p] of s.birthDist) {
       addSharks(s.inv, mask, born * p)
@@ -193,14 +219,22 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
     }
   }
 
-  // --- 突然変異ドラフト ---
-  // 提示だけ行い、選択されるまで進行を止める（選択は applyDraft が行う）
+  // --- ドラフト ---
+  // 提示だけ行い、選択されるまで進行を止める（選択は applyDraft が行う）。
+  // 両方が同時に条件を満たしたときは変異を先に出し、方針は次のティックまで待つ。
   if (s.producedTotal >= s.nextDraftAt) {
     const offers = rollOffers(s, cfg)
-    if (offers.length === 0) {
-      s.nextDraftAt = Infinity
-    } else {
-      s.pendingOffers = offers
+    if (offers.length === 0) s.nextDraftAt = Infinity
+    else {
+      s.pendingDraft = { kind: 'mutation', offers }
+      return
+    }
+  }
+  if (s.cultureTotal >= s.nextPolicyAt) {
+    const offers = rollPolicies(s, cfg)
+    if (offers.length === 0) s.nextPolicyAt = Infinity
+    else {
+      s.pendingDraft = { kind: 'policy', offers }
       return
     }
   }
@@ -217,7 +251,9 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
 
   // --- 侵略 ---
   const n = launchRate(s, cfg) * dt
-  const { damage } = launchWeakest(s.inv, n, s.ranks, cfg)
+  const { launched, damage } = launchWeakest(s.inv, n, s.ranks, cfg)
+  // 検体の再利用: 投入した個体の一部が在庫へ戻る
+  if (s.policyFx.recycle > 0 && launched > 0) addSharks(s.inv, 0, launched * s.policyFx.recycle)
   applyDamage(s, cfg, damage)
 
   // --- タイマー ---
@@ -270,21 +306,41 @@ function finalVolley(s: GameState, cfg: Config): void {
 
 /** 提示中のドラフトを引き直す。1 ラン に使える回数は恒久強化で決まる */
 export function rerollDraft(s: GameState, cfg: Config): boolean {
-  if (!s.pendingOffers || s.rerollsLeft <= 0) return false
+  const d = s.pendingDraft
+  if (!d || s.rerollsLeft <= 0) return false
   s.rerollsLeft -= 1
-  s.pendingOffers = rollOffers(s, cfg)
+  s.pendingDraft =
+    d.kind === 'mutation'
+      ? { kind: 'mutation', offers: rollOffers(s, cfg) }
+      : { kind: 'policy', offers: rollPolicies(s, cfg) }
   return true
 }
 
 /** 提示中のドラフトから 1 枚選んで確定する */
 export function applyDraft(s: GameState, cfg: Config, index: number): void {
-  const offers = s.pendingOffers
-  if (!offers || offers.length === 0) return
-  const chosen = offers[Math.max(0, Math.min(index, offers.length - 1))]
-  s.ranks.set(chosen.id, (s.ranks.get(chosen.id) ?? 0) + 1)
-  refreshBirthDist(s, cfg)
-  pushLog(s, 'draft', `${chosen.name} を確認  R${s.ranks.get(chosen.id)}`, maskOf(chosen))
-  s.draftCount += 1
-  s.nextDraftAt += cfg.mutation.draftThresholdBase * Math.pow(cfg.mutation.draftThresholdGrowth, s.draftCount)
-  s.pendingOffers = null
+  const d = s.pendingDraft
+  if (!d || d.offers.length === 0) return
+  const i = Math.max(0, Math.min(index, d.offers.length - 1))
+
+  if (d.kind === 'mutation') {
+    const chosen = d.offers[i]
+    s.ranks.set(chosen.id, (s.ranks.get(chosen.id) ?? 0) + 1)
+    refreshBirthDist(s, cfg)
+    pushLog(s, 'draft', `${chosen.name} を確認  R${s.ranks.get(chosen.id)}`, maskOf(chosen))
+    s.draftCount += 1
+    s.nextDraftAt +=
+      cfg.mutation.draftThresholdBase *
+      Math.pow(cfg.mutation.draftThresholdGrowth, s.draftCount) *
+      s.policyFx.draftThresholdMult
+  } else {
+    const chosen = d.offers[i]
+    s.policies.set(chosen.id, (s.policies.get(chosen.id) ?? 0) + 1)
+    refreshPolicyFx(s)
+    refreshBirthDist(s, cfg)
+    pushLog(s, 'policy', `${chosen.name} を採用  R${s.policies.get(chosen.id)}`)
+    s.policyCount += 1
+    s.nextPolicyAt +=
+      cfg.policy.thresholdBase * Math.pow(cfg.policy.thresholdGrowth, s.policyCount)
+  }
+  s.pendingDraft = null
 }

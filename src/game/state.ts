@@ -3,10 +3,22 @@ import { BUILDINGS, BUILDING_INDEX } from './buildings.ts'
 import { type MetaEffects, metaEffects, createMeta } from './meta.ts'
 import type { Inventory } from './inventory.ts'
 import { type MutationDef, type MutationId, type MutationMask, type MutationRanks, birthDistribution } from './mutations.ts'
+import {
+  EMPTY_POLICY_EFFECTS,
+  type PolicyDef,
+  type PolicyEffects,
+  type PolicyId,
+  type PolicyRanks,
+  policyEffects,
+} from './policies.ts'
 
 export type Phase = 'culture' | 'invasion' | 'over'
 
-export type LogKind = 'hit' | 'boss' | 'depth' | 'draft' | 'system' | 'birth'
+export type PendingDraft =
+  | { kind: 'mutation'; offers: MutationDef[] }
+  | { kind: 'policy'; offers: PolicyDef[] }
+
+export type LogKind = 'hit' | 'boss' | 'depth' | 'draft' | 'policy' | 'system' | 'birth'
 /** mask を持つ行は、その組み合わせのサメを添えて表示する */
 export type LogEntry = { t: number; kind: LogKind; text: string; mask?: MutationMask }
 
@@ -40,8 +52,19 @@ export type GameState = {
   producedTotal: number
   nextDraftAt: number
   draftCount: number
-  /** ドラフト提示中。null 以外の間はゲームが進行しない（プレイヤーの選択待ち） */
-  pendingOffers: MutationDef[] | null
+  /**
+   * ドラフト提示中。null 以外の間はゲームが進行しない（プレイヤーの選択待ち）。
+   * 突然変異と研究方針が同時に条件を満たした場合、片方は次のティックまで待つ。
+   */
+  pendingDraft: PendingDraft | null
+
+  /** 研究方針 */
+  policies: PolicyRanks
+  policyFx: PolicyEffects
+  /** 累計で獲得した培養液。研究方針のしきい値に使う */
+  cultureTotal: number
+  nextPolicyAt: number
+  policyCount: number
 
   /** 現在挑戦中の深度 */
   depth: number
@@ -83,7 +106,12 @@ export function createState(cfg: Config, seed: number, meta?: MetaEffects): Game
     producedTotal: 0,
     nextDraftAt: eff.earlyDraft ? 10 : cfg.mutation.draftThresholdBase,
     draftCount: 0,
-    pendingOffers: null,
+    pendingDraft: null,
+    policies: new Map<PolicyId, number>(),
+    policyFx: EMPTY_POLICY_EFFECTS,
+    cultureTotal: 0,
+    nextPolicyAt: cfg.policy.thresholdBase,
+    policyCount: 0,
     depth: 1,
     destroyed: 0,
     onBoss: false,
@@ -120,4 +148,8 @@ export function rng(s: GameState): number {
   t = Math.imul(t ^ (t >>> 15), t | 1)
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+}
+
+export function refreshPolicyFx(s: GameState): void {
+  s.policyFx = policyEffects(s.policies)
 }

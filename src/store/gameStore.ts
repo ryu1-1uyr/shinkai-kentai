@@ -141,10 +141,18 @@ export function wipeMeta(): void {
 
 // --- プレイヤー操作 -------------------------------------------------------
 
-export function manualClick(): void {
-  if (state.phase === 'over' || state.pendingOffers) return
-  state.culture += clickValue(state, cfg)
+/**
+ * 手動採取。研究方針「過剰採取」を取っていると確率で 2 倍になる。
+ * 会心したかを返すので、演出側で見せ方を変えられる。
+ */
+export function manualClick(): boolean {
+  if (state.phase === 'over' || state.pendingDraft) return false
+  const crit = state.policyFx.clickCrit > 0 && Math.random() < state.policyFx.clickCrit
+  const gained = clickValue(state, cfg) * (crit ? 2 : 1)
+  state.culture += gained
+  state.cultureTotal += gained
   emit()
+  return crit
 }
 
 export function canAfford(def: BuildingDef, owned: number): boolean {
@@ -219,7 +227,7 @@ export function startNewRun(): void {
 
 /** ラン終了時に一度だけ呼ばれ、研究予算を確定する */
 function awardRun(): void {
-  lastAward = budgetFor(state.score, state.clearedDepth)
+  lastAward = Math.floor(budgetFor(state.score, state.clearedDepth) * state.policyFx.budgetMult)
   meta.budget += lastAward
   meta.lifetimeBudget += lastAward
   meta.runs += 1
@@ -245,7 +253,7 @@ function frame(now: number): void {
   let ticked = false
   while (acc >= TICK) {
     acc -= TICK
-    if (state.phase === 'over' || state.pendingOffers) {
+    if (state.phase === 'over' || state.pendingDraft) {
       acc = 0
       break
     }
@@ -260,7 +268,7 @@ function frame(now: number): void {
   }
 
   sinceNotify += rawDt
-  if (sinceNotify >= NOTIFY_INTERVAL || (ticked && state.pendingOffers) || state.phase === 'over') {
+  if (sinceNotify >= NOTIFY_INTERVAL || (ticked && state.pendingDraft) || state.phase === 'over') {
     sinceNotify = 0
     emit()
   }

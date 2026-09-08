@@ -36,13 +36,15 @@ export function ProducePanel() {
    * React の再描画には乗せず、DOM を直接生やして CSS で消す。
    */
   const onCollect = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const gained = clickValue(s, cfg)
-    manualClick()
+    const base = clickValue(s, cfg)
+    const crit = manualClick()
+    const gained = base * (crit ? 2 : 1)
     const host = areaRef.current
     if (!host) return
     const r = host.getBoundingClientRect()
     const pop = document.createElement('span')
     pop.className = 'pop'
+    if (crit) pop.dataset.crit = 'true'
     pop.textContent = `+${fmt(gained)}`
     pop.style.setProperty('--px', `${e.clientX - r.left}px`)
     pop.style.setProperty('--py', `${e.clientY - r.top}px`)

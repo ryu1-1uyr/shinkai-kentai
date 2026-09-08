@@ -96,7 +96,7 @@ export function InvasionViewer() {
       }
 
       // --- 湧かせる（実際の投入速度そのまま） ---
-      if (s.phase === 'invasion' && !s.pendingOffers) {
+      if (s.phase === 'invasion' && !s.pendingDraft) {
         acc += dt * launchRate(s, cfg) * getSpeed()
         let guard = 0
         while (acc >= 1 && guard++ < 120) {

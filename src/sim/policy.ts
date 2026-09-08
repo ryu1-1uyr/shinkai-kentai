@@ -106,3 +106,35 @@ export function makeDraftChooser(name: DraftPolicyName) {
     return best
   }
 }
+
+/**
+ * 研究方針の選び方（シミュレータ用）。
+ * 効果の種類が異なり単純な期待値比較ができないため、
+ * 生産に効くものを優先する固定の優先度で選ぶ。
+ */
+const POLICY_PRIORITY: string[] = [
+  'condensate',
+  'forcing',
+  'reprocess',
+  'pressurize',
+  'catalyst',
+  'preempt',
+  'overdraw',
+  'swarmSense',
+  'recycle',
+  'preserve',
+]
+
+export function pickPolicy(offers: Array<{ id: string }>): number {
+  let best = 0
+  let bestRank = Infinity
+  offers.forEach((o, i) => {
+    const r = POLICY_PRIORITY.indexOf(o.id)
+    const rank = r < 0 ? 999 : r
+    if (rank < bestRank) {
+      bestRank = rank
+      best = i
+    }
+  })
+  return best
+}

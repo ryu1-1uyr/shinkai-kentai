@@ -125,6 +125,11 @@
 }
 
 /* 飛んでいく数値 */
+.pop[data-crit='true'] {
+  color: var(--c-score);
+  font-size: var(--fs-lg);
+  text-shadow: 0 0 10px #ffb45499;
+}
 .pop {
   position: absolute;
   left: var(--px);
@@ -146,7 +151,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .click-area.is-hit { animation: none; }
-  .pop { animation-duration: 260ms; }
+  .pop[data-crit='true'] {
+  color: var(--c-score);
+  font-size: var(--fs-lg);
+  text-shadow: 0 0 10px #ffb45499;
+}
+.pop { animation-duration: 260ms; }
 }
 
 /* ---- 施設リスト ---- */
@@ -242,6 +252,14 @@
 .card .sprite { --sprite-size: 34px; }
 .card-name { font-size: var(--fs-md); }
 .card-rarity { font-size: var(--fs-xs); letter-spacing: 0.1em; }
+/* 研究方針は施設側の選択。変異と一目で区別が付くよう、色と縁の出方を変える */
+.card[data-kind='policy'] {
+  border-left: 3px solid var(--c-culture);
+  background: linear-gradient(180deg, #45e0c814, var(--c-bg-deep) 40%);
+}
+.card[data-kind='policy'] .card-rarity { color: var(--c-culture); }
+.modal[data-draft='policy'] .modal-title { color: var(--c-culture); }
+
 .card[data-rarity="common"] { border-left: 3px solid var(--c-common); }
 .card[data-rarity="uncommon"] { border-left: 3px solid var(--c-uncommon); }
 .card[data-rarity="rare"] { border-left: 3px solid var(--c-rare); }
@@ -667,6 +685,8 @@
 .log-row[data-kind='depth'] .log-text { color: var(--c-culture); }
 .log-row[data-kind='draft'] { border-left-color: var(--c-uncommon); }
 .log-row[data-kind='draft'] .log-text { color: var(--c-uncommon); }
+.log-row[data-kind='policy'] { border-left-color: var(--c-culture); }
+.log-row[data-kind='policy'] .log-text { color: var(--c-culture); }
 .log-row[data-kind='birth'] { border-left-color: var(--c-legendary); }
 .log-row[data-kind='birth'] .log-text { color: var(--c-legendary); }
 .log-row[data-kind='system'] { border-left-color: var(--c-danger); }

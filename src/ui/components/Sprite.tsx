@@ -11,7 +11,7 @@ import { useAssetVersion } from '../useAssetVersion.ts'
  * 変異のアイコンは、その変異が付いたサメのスプライトをそのまま縮めて出す
  * （別に描く必要がなく、base.png を描き替えれば追従する）。
  */
-export type SpriteKind = 'building' | 'mutation' | 'resource' | 'target' | 'ui'
+export type SpriteKind = 'building' | 'mutation' | 'policy' | 'resource' | 'target' | 'ui'
 
 export function Sprite({
   kind,

@@ -5,7 +5,7 @@ import { MUTATION_BY_ID, expectedPower, nameOfMask, powerOfMask } from '../game/
 import { applyMetaToConfig, createMeta, type MetaState, metaEffects } from '../game/meta.ts'
 import { createState, type GameState } from '../game/state.ts'
 import { applyDraft, clickValue, cultureRate, tick } from '../game/tick.ts'
-import { autoBuy, BUY_RATIOS, type DraftPolicyName, makeDraftChooser } from './policy.ts'
+import { autoBuy, BUY_RATIOS, type DraftPolicyName, makeDraftChooser, pickPolicy } from './policy.ts'
 
 export type SimOptions = {
   cfg?: Config
@@ -31,6 +31,19 @@ export type SimResult = {
   topStacks: Array<{ name: string; count: number; power: number }>
 }
 
+/**
+ * 提示中のドラフトから 1 枚選ぶ。
+ * 突然変異は方針関数に任せ、研究方針は別の基準で選ぶ。
+ */
+function pickDraft(
+  s: GameState,
+  cfg: Config,
+  chooser: ReturnType<typeof makeDraftChooser>,
+): number {
+  const d = s.pendingDraft!
+  return d.kind === 'mutation' ? chooser(d.offers, s, cfg) : pickPolicy(d.offers)
+}
+
 export function simulate(opts: SimOptions = {}): SimResult {
   const meta = opts.meta ?? createMeta()
   const eff = metaEffects(meta)
@@ -44,7 +57,7 @@ export function simulate(opts: SimOptions = {}): SimResult {
 
   while (s.phase !== 'over' && s.t < maxT) {
     tick(s, input, cfg)
-    if (s.pendingOffers) applyDraft(s, cfg, chooser(s.pendingOffers, s, cfg))
+    if (s.pendingDraft) applyDraft(s, cfg, pickDraft(s, cfg, chooser))
     // 購入判断は 1 秒に 1 回で十分（毎ティック回すと無駄が大きい）
     if (Math.round(s.t / dt) % cfg.tickHz === 0) autoBuy(s, cfg, ratio, cultureRate(s) + clickValue(s, cfg) * input.clicksPerSec)
   }
@@ -172,7 +185,7 @@ if (mode === 'trace') {
   console.log('\n  t   phase     培養液    施設(培/餌/繁/加/射)   生産   在庫     戦果   E[pw]  深度 残時間')
   while (s.phase !== 'over' && s.t < 600) {
     tick(s, input, cfg)
-        if (s.pendingOffers) applyDraft(s, cfg, chooser(s.pendingOffers, s, cfg))
+        if (s.pendingDraft) applyDraft(s, cfg, pickDraft(s, cfg, chooser))
     if (Math.round(s.t / dt) % cfg.tickHz === 0) autoBuy(s, cfg, ratio, cultureRate(s) + clickValue(s, cfg) * input.clicksPerSec)
     if (s.t >= nextLog) {
       nextLog += 10

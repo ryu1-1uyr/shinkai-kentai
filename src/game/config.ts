@@ -54,6 +54,13 @@ export type Config = {
     /** 1 回のドラフトで提示する枚数 */
     draftSize: number
   }
+
+  policy: {
+    /** 研究方針のしきい値: 累計獲得培養液。base * growth^k を積み上げる */
+    thresholdBase: number
+    thresholdGrowth: number
+    draftSize: number
+  }
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -81,7 +88,7 @@ export const DEFAULT_CONFIG: Config = {
 
   targets: {
     baseHp: 3000,
-    hpGrowth: 5.0,
+    hpGrowth: 7.0,
     countBase: 8,
     countStep: 2,
     bossMult: 10,
@@ -93,6 +100,14 @@ export const DEFAULT_CONFIG: Config = {
     rankRateLinear: true,
     rankPowerMult: 3.0,
     maxRank: 3,
+    draftSize: 3,
+  },
+
+  policy: {
+    // 開始 10 秒ほどで 1 枚目が出るように低く置く。
+    // 専用のチュートリアルを作らず、ここで「カードを選ぶゲーム」だと覚えさせる
+    thresholdBase: 30,
+    thresholdGrowth: 3.6,
     draftSize: 3,
   },
 }
