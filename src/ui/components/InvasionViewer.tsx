@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { sortedByPower, totalSharks } from '../../game/inventory.ts'
+import { cachedPower } from '../../game/mutations.ts'
 import { pixelIcon } from '../../render/icons.ts'
 import { sharkSprite } from '../../render/sharkSprite.ts'
 import { getConfig, getSpeed, getState } from '../../store/gameStore.ts'
@@ -155,22 +156,33 @@ const PALETTE_SIZE = 16
 const PALETTE_WEIGHT_EXP = 0.5
 
 /**
- * いま出撃している個体の見た目を、**頭数の比で**選ぶ。
+ * いま出撃している個体の見た目を、**構成比で**選ぶ。
  *
  * 以前は「最も弱い個体」1 種だけを使っていたので、実際には
  * 変異した個体も大量に出撃しているのに通常サメしか流れなかった。
+ *
+ * 引く先は在庫と出現分布の 2 つ。
+ * 投入が生産を上回っている（＝終盤の通常の状態）と在庫は毎ティック空になり、
+ * 在庫だけを見ていると **通常サメ 1 種に潰れる**。
+ * そのときは「いま生まれている構成」である出現分布から引く。
+ * 出撃しているのはまさにその瞬間に生まれた個体なので、実態とも合う。
  *
  * 戻り値は戦闘力の昇順。湧かせる側が、大きい階層ほど後ろ（強い側）から
  * 引くことで、大きいサメほど珍しい見た目になる。
  */
 function launchingPalette(): number[] {
   const s = getState()
-  const total = totalSharks(s.inv)
-  if (total <= 0) return [0]
-  const rows = sortedByPower(s.inv, s.ranks, getConfig(), s.powerCache)
+  const cfg = getConfig()
+
+  const rows =
+    totalSharks(s.inv) > 0
+      ? sortedByPower(s.inv, s.ranks, cfg, s.powerCache).map((r) => ({ mask: r.mask, weight: r.count }))
+      : s.birthDist
+          .map(([mask, p]) => ({ mask, weight: p, power: cachedPower(mask, s.ranks, cfg, s.powerCache) }))
+          .sort((a, b) => a.power - b.power)
   if (rows.length === 0) return [0]
 
-  const weights = rows.map((r) => Math.pow(r.count, PALETTE_WEIGHT_EXP))
+  const weights = rows.map((r) => Math.pow(r.weight, PALETTE_WEIGHT_EXP))
   let sum = 0
   for (const w of weights) sum += w
   if (sum <= 0) return [0]
@@ -179,7 +191,7 @@ function launchingPalette(): number[] {
   let acc = 0
   let i = 0
   for (let k = 0; k < PALETTE_SIZE; k++) {
-    // 累積した重みを等間隔に切ると、頭数の多い種ほど多く選ばれる
+    // 累積した重みを等間隔に切ると、構成比の大きい種ほど多く選ばれる
     const target = (sum * (k + 0.5)) / PALETTE_SIZE
     while (i < rows.length - 1 && acc + weights[i] < target) {
       acc += weights[i]
