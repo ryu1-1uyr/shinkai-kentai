@@ -7,6 +7,7 @@ import {
   type MutationId,
   type MutationMask,
   type MutationRanks,
+  type PowerCache,
   birthDistribution,
 } from './mutations.ts'
 import {
@@ -52,6 +53,8 @@ export type GameState = {
   ranks: MutationRanks
   /** ranks が変わるたびに作り直す出生分布のキャッシュ */
   birthDist: Array<[MutationMask, number]>
+  /** mask ごとの戦闘力。ドラフトでランクが動いたときだけ捨てる */
+  powerCache: PowerCache
 
   /** サメの累計生産数。ドラフトのトリガー */
   producedTotal: number
@@ -111,6 +114,7 @@ export function createState(cfg: Config, seed: number, meta?: MetaEffects): Game
     births: new Map(),
     ranks: new Map<MutationId, number>(),
     birthDist: [[0, 1]],
+    powerCache: new Map(),
     producedTotal: 0,
     nextDraftAt: eff.earlyDraft ? 10 : cfg.mutation.draftThresholdBase,
     draftCount: 0,
@@ -149,6 +153,8 @@ export function createState(cfg: Config, seed: number, meta?: MetaEffects): Game
 
 export function refreshBirthDist(s: GameState, cfg: Config): void {
   s.birthDist = birthDistribution(s.ranks, cfg)
+  // 戦闘力はランクが動いたときだけ変わる。ここで捨てれば次から積み直される
+  s.powerCache.clear()
 }
 
 /** mulberry32。再現性のある擬似乱数 */

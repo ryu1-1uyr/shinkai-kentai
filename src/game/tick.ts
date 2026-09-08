@@ -271,7 +271,7 @@ export function tick(s: GameState, input: TickInput, cfg: Config): void {
 
   // --- 侵略 ---
   const n = launchRate(s, cfg) * dt
-  const { launched, damage } = launchWeakest(s.inv, n, s.ranks, cfg)
+  const { launched, damage } = launchWeakest(s.inv, n, s.ranks, cfg, s.powerCache)
   // 検体の再利用: 投入した個体の一部が在庫へ戻る
   if (s.policyFx.recycle > 0 && launched > 0) addSharks(s.inv, 0, launched * s.policyFx.recycle)
   applyDamage(s, cfg, damage)
@@ -320,7 +320,7 @@ function applyDamage(s: GameState, cfg: Config, damage: number): void {
 function finalVolley(s: GameState, cfg: Config): void {
   const all = totalSharks(s.inv)
   if (all <= 0) return
-  const { damage } = launchWeakest(s.inv, all, s.ranks, cfg)
+  const { damage } = launchWeakest(s.inv, all, s.ranks, cfg, s.powerCache)
   applyDamage(s, cfg, damage)
 }
 

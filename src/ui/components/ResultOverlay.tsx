@@ -1,4 +1,4 @@
-import { hasMutation, MUTATIONS, nameOfMask, powerOfMask } from '../../game/mutations.ts'
+import { cachedPower, hasMutation, MUTATIONS, nameOfMask } from '../../game/mutations.ts'
 import { depthName } from '../../game/targets.ts'
 import { getConfig, getLastAward, setScreen } from '../../store/gameStore.ts'
 import { fmt, mmss } from '../format.ts'
@@ -22,7 +22,7 @@ export function ResultOverlay() {
     .map(([mask, count]) => ({
       mask,
       count,
-      power: powerOfMask(mask, s.ranks, cfg),
+      power: cachedPower(mask, s.ranks, cfg, s.powerCache),
       traits: MUTATIONS.filter((m) => hasMutation(mask, m)).length,
     }))
     .sort((a, b) => b.traits - a.traits || b.power - a.power)[0]
@@ -31,7 +31,7 @@ export function ResultOverlay() {
     .map(([mask, count]) => ({
       mask,
       count,
-      power: powerOfMask(mask, s.ranks, cfg),
+      power: cachedPower(mask, s.ranks, cfg, s.powerCache),
     }))
     .filter((x) => x.count >= 1)
     .sort((a, b) => b.power * b.count - a.power * a.count)

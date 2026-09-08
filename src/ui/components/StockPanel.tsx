@@ -1,4 +1,5 @@
-import { MUTATIONS, nameOfMask, powerOfMask, rateAt } from '../../game/mutations.ts'
+import { cachedPower, MUTATIONS, nameOfMask, rateAt } from '../../game/mutations.ts'
+import { totalSharks } from '../../game/inventory.ts'
 import { getConfig } from '../../store/gameStore.ts'
 import { fmt } from '../format.ts'
 import { useGame } from '../useGame.ts'
@@ -6,6 +7,21 @@ import { SharkIcon } from './SharkIcon.tsx'
 import { Sprite } from './Sprite.tsx'
 
 const VISIBLE = 10
+
+type Row = { mask: number; count: number; power: number }
+
+/** 在庫のある種を先に、そのあとは戦闘力の高い順 */
+function better(a: Row, b: Row): boolean {
+  if (a.count >= 1 !== b.count >= 1) return a.count >= 1
+  return a.power > b.power
+}
+
+/** 整列済みの配列に 1 件差し込む。長さが VISIBLE 以下なので線形で足りる */
+function insert(rows: Row[], row: Row): void {
+  let i = rows.length
+  while (i > 0 && better(row, rows[i - 1])) i--
+  rows.splice(i, 0, row)
+}
 
 export function StockPanel() {
   const s = useGame()
@@ -16,15 +32,26 @@ export function StockPanel() {
    * 侵略中は生産した端から出撃するので在庫は常にほぼゼロで、
    * 在庫だけを出すと一覧が空になって何を作ってきたのかが残らない。
    * 出撃済みの種は 0 体のまま並べ続け、そのランの成果として見せる。
+   *
+   * 種は変異の組み合わせぶんだけ増えるので、深いランでは数千件になる。
+   * 全件を並べ替えると 10Hz の再描画に乗ってこないため、
+   * 上位 VISIBLE 件だけを 1 パスで拾う。
    */
-  const stacks = [...s.births.entries()]
-    .filter(([, born]) => born >= 1)
-    .map(([mask]) => ({ mask, count: s.inv.get(mask) ?? 0, power: powerOfMask(mask, s.ranks, cfg) }))
-    // 在庫のある種を先に、そのあとは戦闘力の高い順
-    .sort((a, b) => Number(b.count >= 1) - Number(a.count >= 1) || b.power - a.power)
-  const shown = stacks.slice(0, VISIBLE)
-  const rest = stacks.slice(VISIBLE)
-  const restCount = rest.reduce((a, b) => a + b.count, 0)
+  let speciesCount = 0
+  const shown: Row[] = []
+  for (const [mask, born] of s.births) {
+    if (born < 1) continue
+    speciesCount++
+    const row = { mask, count: s.inv.get(mask) ?? 0, power: cachedPower(mask, s.ranks, cfg, s.powerCache) }
+    if (shown.length < VISIBLE) {
+      insert(shown, row)
+    } else if (better(row, shown[VISIBLE - 1])) {
+      shown.pop()
+      insert(shown, row)
+    }
+  }
+  const restSpecies = speciesCount - shown.length
+  const restCount = totalSharks(s.inv) - shown.reduce((a, b) => a + b.count, 0)
 
   return (
     <div className="col area-stock">
@@ -68,10 +95,10 @@ export function StockPanel() {
             </div>
           ))
         )}
-        {rest.length > 0 && (
+        {restSpecies > 0 && (
           <div className="stack">
-            <span className="stack-name empty-note">その他 {rest.length} 種</span>
-            <span className="stack-count">{fmt(restCount)}</span>
+            <span className="stack-name empty-note">その他 {restSpecies} 種</span>
+            <span className="stack-count">{fmt(Math.max(0, restCount))}</span>
           </div>
         )}
       </div>

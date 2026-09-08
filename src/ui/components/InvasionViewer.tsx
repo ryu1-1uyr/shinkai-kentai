@@ -9,8 +9,8 @@ import { getConfig, getSpeed, getState } from '../../store/gameStore.ts'
  * 突撃ビュワー。
  *
  * ゲームの計算には一切関与しない「見せるだけ」の層。
- * 投入されたサメを 1:1 で描く（実測した投入速度の上限は 113 体/秒で、
- * ゲーム全体を通してこれを超えないため間引きは不要）。
+ * 投入されたサメを 1:1 で描くが、同時に出せる数には上限を置く。
+ * 上限に達したあとは投入速度が増えても見た目は変わらない。
  *
  * 描画を canvas にしているのは 2 つの理由による。
  *  1. 数百体を DOM で持つと重い
@@ -22,7 +22,18 @@ import { getConfig, getSpeed, getState } from '../../store/gameStore.ts'
  * 描画側のコードは変わらない。
  */
 
-const MAX_PARTICLES = 3000
+/**
+ * 同時に描くサメの上限。
+ *
+ * 恒久強化を積むと投入速度は 9 万体/秒を超える。1:1 で描くとフレームが落ちる。
+ * ビュワーはおよそ 500x120 なので、サメ 1 体（34x20）で埋め尽くすのに 90 体ほど。
+ * 600 体なら画面 7 面ぶんの密度で、数えられない濁流としては十分に見える。
+ * 実測でこの上限なら 0.3 ms/フレーム、3000 体でも 1.3 ms しかかからないが、
+ * それ以上並べても見た目が変わらないので描かない。
+ */
+const MAX_PARTICLES = 600
+/** 1 フレームに湧かせる上限。取りこぼした分は捨てる（溜めても描けない） */
+const MAX_SPAWN_PER_FRAME = 120
 const GRAVITY = 1100
 
 type P = {
@@ -40,7 +51,7 @@ type P = {
 /** いま出撃しているのは最も弱い個体なので、その組み合わせの見た目を使う */
 function launchingMask(): number {
   const s = getState()
-  const stacks = sortedByPower(s.inv, s.ranks, getConfig())
+  const stacks = sortedByPower(s.inv, s.ranks, getConfig(), s.powerCache)
   return stacks.find((x) => x.count >= 1)?.mask ?? 0
 }
 
@@ -97,11 +108,14 @@ export function InvasionViewer() {
 
       // --- 湧かせる（実際の投入速度そのまま） ---
       if (s.phase === 'invasion' && !s.pendingDraft) {
-        acc += dt * launchRate(s, cfg) * getSpeed()
-        let guard = 0
-        while (acc >= 1 && guard++ < 120) {
+        // 描ける以上に溜め込まない。溜めると上限到達後も湧き続けて無駄になる
+        acc = Math.min(acc + dt * launchRate(s, cfg) * getSpeed(), MAX_SPAWN_PER_FRAME)
+        while (acc >= 1) {
           acc -= 1
-          if (parts.length >= MAX_PARTICLES) break
+          if (parts.length >= MAX_PARTICLES) {
+            acc = 0
+            break
+          }
           parts.push({
             x: -14,
             y: 14 + Math.random() * Math.max(10, ground - 28),
@@ -171,8 +185,14 @@ export function InvasionViewer() {
 
       // サメ
       const sH = 20
+      // 同じフレームのサメはほぼ同じ mask なので、画像は使い回す
+      let lastMask = -1
+      let img = sharkSprite(0, 1)
       for (const p of parts) {
-        const img = sharkSprite(p.mask, 1)
+        if (p.mask !== lastMask) {
+          lastMask = p.mask
+          img = sharkSprite(p.mask, 1)
+        }
         const w = (img.width / img.height) * sH
         if (p.bounced) {
           ctx.save()

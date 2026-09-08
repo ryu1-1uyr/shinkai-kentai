@@ -28,8 +28,8 @@ export const FAMILIES: Record<Family, { name: string; initial: boolean }> = {
   disaster: { name: '災害系', initial: false },
 }
 
-export // prettier-ignore
-const RARITY: Record<Rarity, { weight: number; scale: number }> = {
+// prettier-ignore
+export const RARITY: Record<Rarity, { weight: number; scale: number }> = {
   common: { weight: 1.0, scale: 1 },
   uncommon: { weight: 0.7, scale: 120 },
   rare: { weight: 0.45, scale: 600 },
@@ -176,6 +176,28 @@ export function powerOfMask(mask: MutationMask, ranks: MutationRanks, cfg: Confi
     if (hasMutation(mask, def)) p *= powerAt(def, ranks.get(def.id) ?? 0, cfg)
   }
   return p
+}
+
+/**
+ * mask ごとの戦闘力を覚えておく入れ物。
+ *
+ * powerOfMask は変異 32 種を毎回舐めるので、在庫が数千種になると
+ * 1 ティックあたり数ミリ秒に達する。値は mask とランクだけで決まり、
+ * ランクが動くのはドラフトのときだけなので、そこで捨てれば使い回せる。
+ */
+export type PowerCache = Map<MutationMask, number>
+
+export function cachedPower(
+  mask: MutationMask,
+  ranks: MutationRanks,
+  cfg: Config,
+  cache: PowerCache,
+): number {
+  const hit = cache.get(mask)
+  if (hit !== undefined) return hit
+  const v = powerOfMask(mask, ranks, cfg)
+  cache.set(mask, v)
+  return v
 }
 
 /**
