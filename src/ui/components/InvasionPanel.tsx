@@ -23,10 +23,9 @@ export function InvasionPanel() {
             value={Math.ceil(left).toString()}
             caption={t.phase.untilInvasion}
           />
-          <p className="idle-note">{t.invasion.idleNote}</p>
         </div>
 
-        <LogPanel s={s} title={t.log.title} empty={t.log.emptyCulture} />
+        <LogPanel s={s} title={t.log.title} />
       </div>
     )
   }
@@ -70,7 +69,7 @@ export function InvasionPanel() {
         </div>
       </div>
 
-      <LogPanel s={s} title={t.log.title} empty={t.log.emptyInvasion} />
+      <LogPanel s={s} title={t.log.title} />
     </div>
   )
 }
