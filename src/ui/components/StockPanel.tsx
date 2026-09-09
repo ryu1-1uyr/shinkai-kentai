@@ -81,7 +81,6 @@ export function StockPanel() {
 
       <div className="panel scroll">
         <div className="panel-title">{t.stock.title}</div>
-        {s.phase === 'invasion' && <p className="panel-note">{t.stock.note}</p>}
         {shown.length === 0 ? (
           <p className="empty-note">{t.stock.empty}</p>
         ) : (

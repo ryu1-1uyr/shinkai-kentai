@@ -48,7 +48,8 @@
   .app {
     height: 100%;
     overflow: hidden;
-    grid-template-columns: 220px 1fr 196px;
+    /* 左列は設備の効果が 1 行に収まる幅。狭めると「+0.15」あたりが切れる */
+    grid-template-columns: 248px 1fr 196px;
     /*
      * HUD を中央・右の 2 列ぶんに詰め、左の列を上端まで伸ばす。
      * 空いた分はすべて採取ボタンに渡す。連打が主な操作なので、
