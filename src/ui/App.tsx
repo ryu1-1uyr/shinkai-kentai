@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { getScreen, startLoop } from '../store/gameStore.ts'
+import { t } from '../text/index.ts'
 import { LabScreen } from './components/LabScreen.tsx'
 import { useAtmosphere } from './useAtmosphere.ts'
 import { useGame } from './useGame.ts'
@@ -24,6 +25,7 @@ export function App() {
       <>
         <LabScreen />
         <DebugPanel />
+        <Copyright />
       </>
     )
 
@@ -39,6 +41,11 @@ export function App() {
       <ResultOverlay />
       <DepthFlash />
       <DebugPanel />
+      <Copyright />
     </div>
   )
+}
+
+function Copyright() {
+  return <p className="copyright">{t.app.copyright}</p>
 }

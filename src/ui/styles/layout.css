@@ -124,3 +124,26 @@ body::after {
     height: auto;
   }
 }
+
+/*
+ * 署名。どの列にも属さないので固定で置く。
+ * 高さは .app の下パディング（--sp-3）に収まる分だけに抑えて、
+ * 盤面のパネルに重ならないようにしている。
+ * 空気感のレイヤ（z-index: 100）より上に出さないと、
+ * 四隅の暗がりに沈んで読めなくなる。
+ */
+.copyright {
+  position: fixed;
+  left: max(var(--sp-3), env(safe-area-inset-left));
+  bottom: max(1px, env(safe-area-inset-bottom));
+  z-index: 101;
+  margin: 0;
+  font-family: var(--font-num);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--c-text-mute);
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+}

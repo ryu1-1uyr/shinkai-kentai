@@ -14,6 +14,7 @@
 export const ja = {
   app: {
     title: '深海検体増殖計画',
+    copyright: '© 2026 created by ryu',
   },
 
   phase: {

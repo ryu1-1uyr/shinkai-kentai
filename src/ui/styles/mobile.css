@@ -337,4 +337,11 @@
   .tree-head-sub {
     display: none;
   }
+
+  /* 横画面は縦が詰まっているので、盤面に被らない濃さまで落とす */
+  .copyright {
+    left: max(var(--sp-1), env(safe-area-inset-left));
+    font-size: 8px;
+    opacity: 0.28;
+  }
 }
