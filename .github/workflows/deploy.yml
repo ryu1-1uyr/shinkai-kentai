@@ -1,8 +1,10 @@
-name: Deploy to GitHub Pages
+name: Build & Deploy
 
 on:
   push:
     branches: [main]
+  # マージ後にしか検査が走らないと、壊れたものが main に入ってから気付くことになる
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -11,8 +13,9 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  # 配信は決して途中で止めない。プルリクエストの検査だけ、古い実行を捨てる
+  group: pages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -29,11 +32,13 @@ jobs:
       # build は tsc --noEmit を通してから vite build する
       - run: npm run build
       - uses: actions/upload-pages-artifact@v5
+        if: github.event_name != 'pull_request'
         with:
           path: ./dist
 
   deploy:
     needs: build
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
