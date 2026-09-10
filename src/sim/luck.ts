@@ -1,5 +1,5 @@
 import { DEFAULT_CONFIG } from '../game/config.ts'
-import { MUTATION_BY_ID, type MutationId } from '../game/mutations.ts'
+import { MUTATION_BY_ID } from '../game/mutations.ts'
 import { simulate } from './run.ts'
 
 const N = 60
@@ -7,9 +7,10 @@ type Row = { seed: number; depth: number; ep: number; hasLegend: boolean; hasRar
 const results: Row[] = []
 for (let seed = 1; seed <= N; seed++) {
   const r = simulate({ seed, draft: 'greedyEV', cfg: DEFAULT_CONFIG })
-  const ids = r.ranks.split(' ').filter(Boolean)
-  const hasLegend = ids.some((t) => t.startsWith('エイリアン') || t.startsWith('宇宙化'))
-  const hasRare = ids.some((t) => t.startsWith('機械化') || t.startsWith('帯電化'))
+  // 名前で判定すると変異を足すたびに取りこぼす。定義のレア度をそのまま引く
+  const rarities = r.rankIds.map((id) => MUTATION_BY_ID.get(id)!.rarity)
+  const hasLegend = rarities.includes('legendary')
+  const hasRare = rarities.includes('rare')
   results.push({ seed, depth: r.clearedDepth, ep: r.expPower, hasLegend, hasRare, ranks: r.ranks })
 }
 
@@ -42,5 +43,3 @@ const sorted = [...results].sort((a, b) => b.depth - a.depth)
 for (const r of [sorted[0], sorted[1], sorted[sorted.length - 2], sorted[sorted.length - 1]]) {
   console.log(`  深度 ${String(r.depth).padStart(2)}  E[pw] ${r.ep.toFixed(0).padStart(7)}   ${r.ranks}`)
 }
-void MUTATION_BY_ID
-void (0 as unknown as MutationId)

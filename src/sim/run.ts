@@ -1,7 +1,7 @@
 import { BUILDINGS, buildingName } from '../game/buildings.ts'
 import { type Config, DEFAULT_CONFIG, withConfig } from '../game/config.ts'
 import { totalSharks } from '../game/inventory.ts'
-import { MUTATION_BY_ID, expectedPower, nameOfMask, powerOfMask } from '../game/mutations.ts'
+import { MUTATION_BY_ID, type MutationId, expectedPower, nameOfMask, powerOfMask } from '../game/mutations.ts'
 import { mutationName } from '../game/mutations.ts'
 import { applyMetaToConfig, createMeta, type MetaState, metaEffects } from '../game/meta.ts'
 import { createState, type GameState } from '../game/state.ts'
@@ -28,6 +28,8 @@ export type SimResult = {
   leftover: number
   expPower: number
   draftCount: number
+  /** 取った変異の id。文字列の ranks と違い、集計に使える */
+  rankIds: MutationId[]
   ranks: string
   topStacks: Array<{ name: string; count: number; power: number }>
 }
@@ -78,6 +80,7 @@ export function simulate(opts: SimOptions = {}): SimResult {
     leftover: totalSharks(s.inv),
     expPower: expectedPower(s.ranks, cfg),
     draftCount: s.draftCount,
+    rankIds: [...s.ranks.keys()],
     ranks: [...s.ranks.entries()].map(([id, r]) => `${mutationName(MUTATION_BY_ID.get(id)!)}R${r}`).join(' '),
     topStacks: stacks,
   }
