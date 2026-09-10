@@ -76,6 +76,8 @@ detail: (lv) => fill(t.upgrade.clickPower.detail, { mult: (1 + 0.3 * lv).toFixed
 CI は `npm ci` → `npm run format:check` → `npm run build`（`tsc --noEmit` を含む）の順。
 **整形されていないコードは型エラーと同じく配信前に止まる。**
 
+同じ検査はプルリクエストでも走る。配信だけは `main` への push のときにしか動かない。
+
 配信先を変えるときに触るのは 3 箇所。
 
 | 場所                          | 何を持っているか                                                     |
