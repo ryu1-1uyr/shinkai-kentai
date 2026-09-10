@@ -1,10 +1,12 @@
-# 深海検体増殖計画（仮題）
+# サメ培養プロジェクト
 
 ブラウザで動くローグライト × インクリメンタルゲーム。
 
 深海の秘密研究施設でサメを培養し、突然変異させて地上の都市にぶつける。
 1 ラン 3〜8 分。到達深度に応じた研究予算で恒久強化を買い、次のランへ。
 ランは必ず終わる。生産基地が逆探知され、衛星ビームで消し飛ばされる。
+
+<https://shark.ryu-reu.me> で遊べる。PC と、スマートフォンの横画面に対応している。
 
 ## 動かす
 
@@ -17,13 +19,14 @@ Node は Volta で 24.20.0 に固定してある（`package.json` の `volta` �
 24 系は `.ts` を型ストリップで直接実行できるため、シミュレータを走らせるのに
 追加のランタイムが要らない。
 
-| コマンド            | 内容                                                                       |
-| ------------------- | -------------------------------------------------------------------------- |
-| `npm run dev`       | 開発サーバ                                                                 |
-| `npm run build`     | 型チェック + 本番ビルド                                                    |
-| `npm run typecheck` | 型チェックのみ                                                             |
-| `npm run sim`       | バランスのシミュレーション（ドラフト方針 / タイマー方式 / 購入比率の比較） |
-| `npm run format`    | Prettier で整形                                                            |
+| コマンド               | 内容                                                                       |
+| ---------------------- | -------------------------------------------------------------------------- |
+| `npm run dev`          | 開発サーバ                                                                 |
+| `npm run build`        | 型チェック + 本番ビルド                                                    |
+| `npm run typecheck`    | 型チェックのみ                                                             |
+| `npm run sim`          | バランスのシミュレーション（ドラフト方針 / タイマー方式 / 購入比率の比較） |
+| `npm run format`       | Prettier で整形（`semi: false` / シングルクォート / 110 桁）               |
+| `npm run format:check` | 整形されているかの確認。CI がこれを回す                                    |
 
 ### バランスを数字で確かめる
 
@@ -32,12 +35,18 @@ Node は Volta で 24.20.0 に固定してある（`package.json` の `volta` �
 
 ```bash
 node src/sim/run.ts trace      # 10 秒ごとの状態遷移をトレース
+node src/sim/run.ts sweep      # rankPowerMult の掃引
 node src/sim/analyze.ts        # 係数の掃引とメタ進行の伸びしろ
 node src/sim/progress.ts 40    # 恒久強化を積みながら 40 ラン連続プレイ
 node src/sim/luck.ts           # 運がランに与える影響
+node src/sim/rescue.ts         # 重ね取りが「不運のラン」をどれだけ救えているか
+node src/sim/click.ts          # 手動採取と自動生産の取り分
 node src/sim/rarity.ts         # レア度ごとのドラフト出現率
 node src/sim/species.ts        # 生成された複合サメの一覧
 ```
+
+`src/sim/policy.ts` だけは単体では走らず、施設の購入比率のプリセットを
+他のシミュレータへ供給している。
 
 ## 表示テキスト
 
@@ -64,6 +73,9 @@ detail: (lv) => fill(t.upgrade.clickPower.detail, { mult: (1 + 0.3 * lv).toFixed
 （[.github/workflows/deploy.yml](.github/workflows/deploy.yml)）。
 公開先は <https://shark.ryu-reu.me>。
 
+CI は `npm ci` → `npm run format:check` → `npm run build`（`tsc --noEmit` を含む）の順。
+**整形されていないコードは型エラーと同じく配信前に止まる。**
+
 配信先を変えるときに触るのは 3 箇所。
 
 | 場所                          | 何を持っているか                                                     |
@@ -84,8 +96,11 @@ detail: (lv) => fill(t.upgrade.clickPower.detail, { mult: (1 + 0.3 * lv).toFixed
 shark   CNAME   ryu1-1uyr.github.io.
 ```
 
-反映されると Pages 側で証明書が発行され、Settings → Pages の
-**Enforce HTTPS** が有効にできるようになる。
+Cloudflare を使う場合は**プロキシを通さない（DNS only）**こと。
+プロキシ越しだと Pages 側の証明書発行が完了しない。
+
+反映されると Pages 側で Let's Encrypt の証明書が発行され、
+Settings → Pages の **Enforce HTTPS** が有効にできるようになる。設定済み。
 
 ## ドキュメント
 
@@ -102,14 +117,23 @@ shark   CNAME   ryu1-1uyr.github.io.
 コードの変更は要らない。
 
 ```
-64 × 40 ピクセルの透過 PNG を public/sprites/ 以下に置く
+128 × 72 ピクセルの透過 PNG を public/sprites/ 以下に置く
   ↓
 リロードすると差し替わる
 ```
 
 ファイルが無いレイヤーは仮の絵のまま描かれるので、**1 枚ずつ置き換えていける**。
-必要なのは全部で 24 枚。ファイル名と各画像に描くものは
+必要なのは全部で 21 枚。ファイル名と各画像に描くものは
 [public/sprites/README.md](public/sprites/README.md) にまとめてある。
+
+### ファビコン
+
+`public/favicon.png` は `base.png` の頭部を切り出して作っている。
+サメの絵を描き替えたら、次を回せば追従する。
+
+```bash
+node tools/make-favicon.ts
+```
 
 ## 構成
 
@@ -120,8 +144,11 @@ src/
   sim/      ヘッドレスのバランスシミュレータ
   render/   スプライトの合成。変異を積み上げて 1 枚に焼き、mask 単位でキャッシュする
   store/    ゲームループと React の橋渡し（外部ストア + useSyncExternalStore）
+  text/     画面に出る文字。ja.ts が唯一の辞書
   ui/       画面。色・余白は tokens.css の CSS 変数に集約し、TSX には書かない
+    styles/mobile.css   横画面の調整。全体が 1 つのメディアクエリの中にある
   meta/     セーブデータ（localStorage）
+tools/      ビルドに乗らない補助スクリプト（ファビコン生成・PNG 入出力）
 public/
   sprites/  差し替え用の画像置き場
 ```
